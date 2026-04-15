@@ -118,6 +118,14 @@ manifest. Variants live under `data/perturbations/` and are **not** committed
 from git before running any campaign, since the campaign meta-runner rewrites
 it with generated rows.
 
+## Sensitivity campaigns
+
+The end-to-end workflow (spec → perturbed datasets → multi-parca Nextflow run
+→ cross-variant sensitivity plots) is documented in vEcoli's
+[`doc/sensitivity_campaigns.rst`](https://github.com/CovertLab/vEcoli/blob/multi-parca-aws/doc/sensitivity_campaigns.rst).
+This repo provides the primary data + operator library; vEcoli drives the run
+and runs the analyses.
+
 ## Environment
 
 ```bash
