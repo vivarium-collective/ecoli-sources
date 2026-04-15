@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+title: "ecoli-sources: curated E. coli omics datasets for vEcoli"
+message: "If you use these datasets or schemas, please cite this repository."
+type: dataset
+authors:
+  - family-names: Spangler
+    given-names: Ryan
+    email: ryan.spangler@gmail.com
+abstract: >-
+  Curated, public E. coli omics datasets (RNA-seq TPM tables and a samples
+  manifest) formatted for ingestion into the vEcoli whole-cell model, along
+  with Pandera schemas for parca-time parameter tables and a library of
+  deterministic perturbation operators for generating dataset variants.
+keywords:
+  - Escherichia coli
+  - RNA-seq
+  - transcriptomics
+  - whole-cell model
+  - vEcoli
+  - systems biology
+  - data package
+license: MIT
+references:
+  - type: article
+    title: "Machine learning of all E. coli expression profiles (PRECISE)"
+    authors:
+      - family-names: Sastry
+        given-names: Anand V.
+    year: 2019
+    journal: "Nature Communications"
+    doi: "10.1038/s41467-019-13483-w"
+  - type: software
+    title: "vEcoli: E. coli whole-cell model"
+    authors:
+      - name: "Covert Lab"
+    url: "https://github.com/CovertLab/vEcoli"

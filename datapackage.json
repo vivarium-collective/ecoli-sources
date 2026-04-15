@@ -1,0 +1,100 @@
+{
+  "profile": "tabular-data-package",
+  "name": "ecoli-sources",
+  "title": "ecoli-sources: curated E. coli omics datasets for vEcoli",
+  "description": "Curated, public E. coli RNA-seq TPM tables and a samples manifest formatted for ingestion into the vEcoli whole-cell model. The authoritative schemas are Pandera definitions in `schemas/`; the `tableSchema` blocks below mirror them for Frictionless tooling.",
+  "homepage": "https://github.com/CovertLab/vEcoli",
+  "version": "0.0.1",
+  "licenses": [
+    {
+      "name": "MIT",
+      "title": "MIT License",
+      "path": "https://opensource.org/licenses/MIT"
+    },
+    {
+      "name": "CC-BY-4.0",
+      "title": "Creative Commons Attribution 4.0 International",
+      "path": "https://creativecommons.org/licenses/by/4.0/"
+    }
+  ],
+  "contributors": [
+    {
+      "title": "Ryan Spangler",
+      "email": "ryan.spangler@gmail.com",
+      "role": "author"
+    }
+  ],
+  "keywords": [
+    "escherichia-coli",
+    "rna-seq",
+    "transcriptomics",
+    "whole-cell-model",
+    "vecoli",
+    "systems-biology"
+  ],
+  "resources": [
+    {
+      "name": "rnaseq-samples-manifest",
+      "path": "data/manifest.tsv",
+      "format": "tsv",
+      "mediatype": "text/tab-separated-values",
+      "encoding": "utf-8",
+      "dialect": {"delimiter": "\t", "header": true},
+      "schema": {
+        "primaryKey": "dataset_id",
+        "fields": [
+          {"name": "dataset_id", "type": "string", "constraints": {"required": true, "unique": true}, "description": "Unique identifier for this dataset."},
+          {"name": "dataset_description", "type": "string", "constraints": {"required": true}},
+          {"name": "file_path", "type": "string", "constraints": {"required": true}, "description": "Path to the TPM table relative to the manifest."},
+          {"name": "data_source", "type": "string", "constraints": {"required": true}, "description": "Upstream data source (e.g. 'PRECISE-MG1655', 'vecoli')."},
+          {"name": "data_source_experiment_id", "type": "string"},
+          {"name": "data_source_date", "type": "string"},
+          {"name": "strain", "type": "string"},
+          {"name": "condition", "type": "string"},
+          {"name": "parent_dataset_id", "type": "string", "description": "For generated variants: dataset_id this variant was derived from."},
+          {"name": "operator", "type": "string", "description": "Name of the perturbation operator that produced this variant."},
+          {"name": "operator_params_json", "type": "string", "description": "JSON-encoded operator parameters."},
+          {"name": "seed", "type": "integer", "description": "RNG seed used for deterministic operators."}
+        ]
+      }
+    },
+    {
+      "name": "rnaseq-tpm-tables",
+      "description": "One TSV per condition; one row per gene. Schema applies to every file in the path list.",
+      "path": [
+        "data/vecoli_m9_glucose_minus_aas.tsv",
+        "data/vecoli_m9_glucose_plus_aas.tsv",
+        "data/precise_RPO:wt.tsv",
+        "data/precise_SNPv1:D-Glucose_NH4Cl.tsv",
+        "data/precise_SNPv2:Glucose_NH4Cl.tsv",
+        "data/precise_abx_media:m9_ctrl.tsv",
+        "data/precise_abx_media:m9_ctrl_no_TRPpwy.tsv",
+        "data/precise_control:wt_glc.tsv",
+        "data/precise_eep:BOP27.tsv",
+        "data/precise_ica:wt_glc.tsv",
+        "data/precise_minspan:wt_glc.tsv",
+        "data/precise_misc:wt_no_te.tsv",
+        "data/precise_oxyR:wt_glc.tsv",
+        "data/precise_tcs:wt_m9p.tsv",
+        "data/precise_ytf:wt_glc.tsv",
+        "data/precise_ytf2:wt_glc.tsv",
+        "data/precise_ytf3:wt_glc2.tsv",
+        "data/precise_ytf5:wt_glc.tsv",
+        "data/precise_ytf5:wt_glc_24hr.tsv",
+        "data/precise_ytf5:wt_glc_no_ILEpwy.tsv"
+      ],
+      "format": "tsv",
+      "mediatype": "text/tab-separated-values",
+      "encoding": "utf-8",
+      "dialect": {"delimiter": "\t", "header": true},
+      "schema": {
+        "primaryKey": "gene_id",
+        "fields": [
+          {"name": "gene_id", "type": "string", "constraints": {"required": true, "unique": true}, "description": "EcoCyc gene identifier (e.g. EG10001)."},
+          {"name": "tpm_mean", "type": "number", "constraints": {"required": true, "minimum": 0}, "description": "Mean TPM across replicates."},
+          {"name": "tpm_std", "type": "number", "constraints": {"minimum": 0}, "description": "Standard deviation of TPM across replicates (optional)."}
+        ]
+      }
+    }
+  ]
+}

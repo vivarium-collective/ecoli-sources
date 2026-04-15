@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Perturbations are regenerated locally via vEcoli's
+# runscripts/run_sensitivity_campaign.py — blobs don't belong in git.
+# The campaign meta-runner rewrites data/manifest.tsv with provenance
+# rows for these generated datasets; the canonical primary manifest
+# should be pulled from git before running any campaign.
+data/perturbations/

@@ -1,0 +1,15 @@
+[project]
+name = "ecoli-sources"
+version = "0.0.1"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=2.0",
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    "scikit-learn>=1.4",
+    "scipy>=1.12",
+    "anndata>=0.10",
+    "pandera>=0.19",
+    "jupyter>=1.0",
+]
