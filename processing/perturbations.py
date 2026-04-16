@@ -184,6 +184,26 @@ def quantile_match(
     return src[["gene_id", "tpm_mean"]].reset_index(drop=True)
 
 
+def exclude_genes(
+    tpm: pd.DataFrame,
+    gene_ids: Iterable[str],
+) -> pd.DataFrame:
+    """
+    Remove rows for the given genes entirely (Annabelle's gene-exclusion
+    approach from ``post_processing.make_gene_exclusion_variant``).
+
+    Unlike :func:`zero_genes` which keeps rows at ``tpm_mean=0``, this
+    **drops** them from the table. The difference matters downstream: parca's
+    ``rnaseq_fill_missing_genes_from_ref`` fills absent genes from the
+    reference, so excluded genes get reference-level expression rather than
+    zero. Use this to test whether specific genes are load-bearing for the
+    parca fit.
+    """
+    gene_set = set(gene_ids)
+    out = _drop_std(tpm).copy()
+    return out[~out["gene_id"].isin(gene_set)].reset_index(drop=True)
+
+
 def drop_and_fill(
     tpm: pd.DataFrame,
     fraction: float,
@@ -223,6 +243,7 @@ UNARY_OPERATORS: dict[str, Callable[..., pd.DataFrame]] = {
     "add_log_normal_noise": add_log_normal_noise,
     "scale_gene_set": scale_gene_set,
     "zero_genes": zero_genes,
+    "exclude_genes": exclude_genes,
     "drop_and_fill": drop_and_fill,
 }
 
