@@ -26,10 +26,14 @@ Proteomics and flux data may be added later.
 ## Repository layout
 
 ```
-data/                              Per-dataset TSVs + manifest (ingested by vEcoli)
-  manifest.tsv                     Index of all RNA-seq datasets
-  *.tsv                            TPM tables (gene_id, tpm_mean[, tpm_std])
-  perturbations/                   Generated variants (gitignored; regenerated locally)
+ecoli_sources/                     Top-level Python package; locator for data files
+  __init__.py                      Exposes DATA_DIR and BUNDLE_PATH for consumers
+  data/                            Umbrella for source data, organized by category
+    reference_bundle.tsv           Bundle manifest: canonical_key -> source_path
+    rnaseq_experimental/           Per-dataset TSVs + manifest for RNA-seq inputs
+      manifest.tsv                 Index of all RNA-seq datasets
+      *.tsv                        TPM tables (gene_id, tpm_mean[, tpm_std])
+      perturbations/               Generated variants (gitignored; regenerated locally)
 
 schemas/                           Pandera validation schemas
   rnaseq.py                        RnaseqTpmTableSchema, RnaseqSamplesManifestSchema
@@ -70,7 +74,7 @@ Each RNA-seq TSV is tab-separated, one row per gene:
 
 Extra columns (e.g. gene symbol) are allowed — schemas use `strict="filter"`.
 
-All datasets are registered in `data/manifest.tsv`. See `schemas/README.md`
+All datasets are registered in `ecoli_sources/data/rnaseq_experimental/manifest.tsv`. See `schemas/README.md`
 for the full manifest column spec, including the provenance columns used by
 generated perturbation variants (`parent_dataset_id`, `operator`,
 `operator_params_json`, `seed`).
@@ -91,8 +95,8 @@ Validate a single file against a named schema:
 
 ```bash
 uv run python -m schemas.validate --list
-uv run python -m schemas.validate RnaseqTpmTableSchema data/vecoli_m9_glucose_plus_aas.tsv
-uv run python -m schemas.validate RnaseqSamplesManifestSchema data/manifest.tsv
+uv run python -m schemas.validate RnaseqTpmTableSchema ecoli_sources/data/rnaseq_experimental/vecoli_m9_glucose_plus_aas.tsv
+uv run python -m schemas.validate RnaseqSamplesManifestSchema ecoli_sources/data/rnaseq_experimental/manifest.tsv
 ```
 
 Validate the manifest and every TPM file it references (also run in CI):
@@ -105,14 +109,15 @@ uv run python scripts/validate_all.py
 
 vEcoli's ParCa reads datasets via `rnaseq_manifest_path` +
 `rnaseq_basal_dataset_id` in its config. Point it at this repo's
-`data/manifest.tsv` (via the `$ECOLI_SOURCES` environment variable or a
-direct path).
+`ecoli_sources/data/rnaseq_experimental/manifest.tsv` (via the
+`$ECOLI_SOURCES` environment variable or a direct path), or import
+`ecoli_sources.BUNDLE_PATH` for the full reference bundle.
 
 ## Generating perturbation variants
 
 `processing/perturbations.py` provides deterministic operators that map a
 source TPM table to a perturbed variant and append a provenance row to the
-manifest. Variants live under `data/perturbations/` and are **not** committed
+manifest. Variants live under `ecoli_sources/data/rnaseq_experimental/perturbations/` and are **not** committed
 — regenerate them locally from vEcoli's
 `runscripts/run_sensitivity_campaign.py`. Pull the canonical `manifest.tsv`
 from git before running any campaign, since the campaign meta-runner rewrites

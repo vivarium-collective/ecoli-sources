@@ -1,5 +1,5 @@
 """
-Validate data/manifest.tsv and every TPM file it references.
+Validate ecoli_sources/data/rnaseq_experimental/manifest.tsv and every TPM file it references.
 
 Exits non-zero on the first failure and prints a summary. Intended for use
 in CI; also runnable locally:
@@ -19,7 +19,7 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from schemas import RnaseqSamplesManifestSchema, RnaseqTpmTableSchema  # noqa: E402
 
-DATA_DIR = REPO_ROOT / "data"  # noqa: E402
+DATA_DIR = REPO_ROOT / "ecoli_sources" / "data" / "rnaseq_experimental"  # noqa: E402
 MANIFEST = DATA_DIR / "manifest.tsv"
 
 
@@ -47,8 +47,9 @@ def main() -> int:
         path = (DATA_DIR / rel).resolve()
         dataset_id = row["dataset_id"]
         if not path.exists():
-            # Generated perturbation variants live under data/perturbations/
-            # and are gitignored; skip with a note rather than fail CI.
+            # Generated perturbation variants live under
+            # ecoli_sources/data/rnaseq_experimental/perturbations/ and are
+            # gitignored; skip with a note rather than fail CI.
             if "perturbations/" in str(path) or path.parent.name == "perturbations":
                 print(f"SKIP {dataset_id}: generated variant not present ({rel})")
                 continue
