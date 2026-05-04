@@ -9,6 +9,8 @@ synthesized adjustment tables).
 
 Organization:
 
+* ``reference_bundle`` — bundle manifest (canonical_key → source_path)
+  defining the data package's contract with vEcoli.
 * ``rnaseq`` — per-condition TPM tables + samples manifest (Chris).
 * ``adjustments`` — parca-time manual overrides (flat/adjustments/*).
 * ``parameters`` — growth-rate-dependent physiological parameters.
@@ -17,6 +19,7 @@ Organization:
 * ``regulation`` — TF table, fold changes, ppGpp regulation.
 """
 
+from .reference_bundle import ReferenceBundleSchema
 from .adjustments import (
     AdjustmentValueSchema,
     AminoAcidPathwayAdjustmentSchema,
@@ -46,6 +49,8 @@ from .rnaseq import (
 from .translation import TranslationEfficiencySchema
 
 __all__ = [
+    # reference_bundle
+    "ReferenceBundleSchema",
     # rnaseq
     "RnaseqTpmTableSchema",
     "RnaseqSamplesManifestSchema",

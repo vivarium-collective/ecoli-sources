@@ -1,0 +1,3 @@
+canonical_key	source_path	description	schema_name
+rnaseq_basal_tpms	rnaseq_experimental/vecoli_m9_glucose_minus_aas.tsv	Basal-state transcriptome TPM table; reference for cross-fill of missing genes in experimental data (Tier 1 in RFC-010 framework). M9 glucose minus AAs is vEcoli's default basal condition.	RnaseqTpmTableSchema
+rnaseq_experimental_tpms	rnaseq_experimental/vecoli_m9_glucose_minus_aas.tsv	Experimental TPM data; the swap point for variant runs (Tier 2 in RFC-010 framework). Defaults to the basal reference; cross-fill is a no-op when not swapped.	RnaseqTpmTableSchema
