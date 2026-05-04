@@ -27,6 +27,7 @@ import pandas as pd
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
+import schemas as _schemas_module  # noqa: E402
 from schemas import (  # noqa: E402
     ReferenceBundleSchema,
     RnaseqSamplesManifestSchema,
@@ -69,7 +70,30 @@ def validate_bundle() -> list[str]:
             failures.append(canonical_key)
             continue
         kind = "dir" if path.is_dir() else "file"
-        print(f"OK {canonical_key} ({kind}: {rel})")
+
+        # When schema_name is set on the bundle row, content-validate the
+        # file against that schema. Empty/missing schema_name is fine —
+        # schemas are accreted incrementally.
+        schema_name = row.get("schema_name")
+        if isinstance(schema_name, str) and schema_name and path.is_file():
+            schema = getattr(_schemas_module, schema_name, None)
+            if schema is None:
+                _fail(
+                    f"{canonical_key}: schema_name {schema_name!r} not exported from schemas package",
+                    KeyError(schema_name),
+                )
+                failures.append(canonical_key)
+                continue
+            try:
+                df = pd.read_csv(path, sep="\t", comment="#")
+                schema.validate(df, lazy=True)
+            except Exception as e:
+                _fail(f"{canonical_key}: {schema_name} on {rel}", e)
+                failures.append(canonical_key)
+                continue
+            print(f"OK {canonical_key} ({kind}: {rel}) [validated against {schema_name}]")
+        else:
+            print(f"OK {canonical_key} ({kind}: {rel})")
 
     return failures
 

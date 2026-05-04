@@ -1,13 +1,13 @@
 canonical_key	source_path	description	schema_name
 rnaseq_basal_tpms	rnaseq_experimental/vecoli_m9_glucose_minus_aas.tsv	Basal-state transcriptome TPM table; reference for cross-fill of missing genes in experimental data (Tier 1 in RFC-010 framework). M9 glucose minus AAs is vEcoli's default basal condition.	RnaseqTpmTableSchema
 rnaseq_experimental_tpms	rnaseq_experimental/vecoli_m9_glucose_minus_aas.tsv	Experimental TPM data; the swap point for variant runs (Tier 2 in RFC-010 framework). Defaults to the basal reference; cross-fill is a no-op when not swapped.	RnaseqTpmTableSchema
-adjustments__amino_acid_pathways	flat/adjustments/amino_acid_pathways.tsv	ParCa flat input: adjustments/amino_acid_pathways.tsv	
-adjustments__balanced_translation_efficiencies	flat/adjustments/balanced_translation_efficiencies.tsv	ParCa flat input: adjustments/balanced_translation_efficiencies.tsv	
-adjustments__protein_deg_rates_adjustments	flat/adjustments/protein_deg_rates_adjustments.tsv	ParCa flat input: adjustments/protein_deg_rates_adjustments.tsv	
-adjustments__relative_metabolite_concentrations_changes	flat/adjustments/relative_metabolite_concentrations_changes.tsv	ParCa flat input: adjustments/relative_metabolite_concentrations_changes.tsv	
-adjustments__rna_deg_rates_adjustments	flat/adjustments/rna_deg_rates_adjustments.tsv	ParCa flat input: adjustments/rna_deg_rates_adjustments.tsv	
-adjustments__rna_expression_adjustments	flat/adjustments/rna_expression_adjustments.tsv	ParCa flat input: adjustments/rna_expression_adjustments.tsv	
-adjustments__translation_efficiencies_adjustments	flat/adjustments/translation_efficiencies_adjustments.tsv	ParCa flat input: adjustments/translation_efficiencies_adjustments.tsv	
+adjustments__amino_acid_pathways	flat/adjustments/amino_acid_pathways.tsv	ParCa flat input: adjustments/amino_acid_pathways.tsv	AminoAcidPathwayAdjustmentSchema
+adjustments__balanced_translation_efficiencies	flat/adjustments/balanced_translation_efficiencies.tsv	ParCa flat input: adjustments/balanced_translation_efficiencies.tsv	BalancedTranslationEfficiencyGroupSchema
+adjustments__protein_deg_rates_adjustments	flat/adjustments/protein_deg_rates_adjustments.tsv	ParCa flat input: adjustments/protein_deg_rates_adjustments.tsv	AdjustmentValueSchema
+adjustments__relative_metabolite_concentrations_changes	flat/adjustments/relative_metabolite_concentrations_changes.tsv	ParCa flat input: adjustments/relative_metabolite_concentrations_changes.tsv	RelativeMetaboliteConcentrationChangeSchema
+adjustments__rna_deg_rates_adjustments	flat/adjustments/rna_deg_rates_adjustments.tsv	ParCa flat input: adjustments/rna_deg_rates_adjustments.tsv	AdjustmentValueSchema
+adjustments__rna_expression_adjustments	flat/adjustments/rna_expression_adjustments.tsv	ParCa flat input: adjustments/rna_expression_adjustments.tsv	AdjustmentValueSchema
+adjustments__translation_efficiencies_adjustments	flat/adjustments/translation_efficiencies_adjustments.tsv	ParCa flat input: adjustments/translation_efficiencies_adjustments.tsv	AdjustmentValueSchema
 amino_acid_export_kms	flat/amino_acid_export_kms.tsv	ParCa flat input: amino_acid_export_kms.tsv	
 amino_acid_export_kms_removed	flat/amino_acid_export_kms_removed.tsv	ParCa flat input: amino_acid_export_kms_removed.tsv	
 amino_acid_pathways	flat/amino_acid_pathways.tsv	ParCa flat input: amino_acid_pathways.tsv	
@@ -39,19 +39,19 @@ condition__timelines_def	flat/condition/timelines_def.tsv	ParCa flat input: cond
 disabled_kinetic_reactions	flat/disabled_kinetic_reactions.tsv	ParCa flat input: disabled_kinetic_reactions.tsv	
 dna_sites	flat/dna_sites.tsv	ParCa flat input: dna_sites.tsv	
 dna_supercoiling	flat/dna_supercoiling.tsv	ParCa flat input: dna_supercoiling.tsv	
-dry_mass_composition	flat/dry_mass_composition.tsv	ParCa flat input: dry_mass_composition.tsv	
+dry_mass_composition	flat/dry_mass_composition.tsv	ParCa flat input: dry_mass_composition.tsv	DryMassCompositionSchema
 endoRNases	flat/endoRNases.tsv	ParCa flat input: endoRNases.tsv	
 equilibrium_reaction_rates	flat/equilibrium_reaction_rates.tsv	ParCa flat input: equilibrium_reaction_rates.tsv	
 equilibrium_reactions	flat/equilibrium_reactions.tsv	ParCa flat input: equilibrium_reactions.tsv	
 equilibrium_reactions_added	flat/equilibrium_reactions_added.tsv	ParCa flat input: equilibrium_reactions_added.tsv	
 equilibrium_reactions_removed	flat/equilibrium_reactions_removed.tsv	ParCa flat input: equilibrium_reactions_removed.tsv	
-fold_changes	flat/fold_changes.tsv	ParCa flat input: fold_changes.tsv	
+fold_changes	flat/fold_changes.tsv	ParCa flat input: fold_changes.tsv	FoldChangesSchema
 fold_changes_nca	flat/fold_changes_nca.tsv	ParCa flat input: fold_changes_nca.tsv	
 fold_changes_removed	flat/fold_changes_removed.tsv	ParCa flat input: fold_changes_removed.tsv	
 footprint_sizes	flat/footprint_sizes.tsv	ParCa flat input: footprint_sizes.tsv	
 gene_fragments	flat/gene_fragments.tsv	ParCa flat input: gene_fragments.tsv	
 genes	flat/genes.tsv	ParCa flat input: genes.tsv	
-growth_rate_dependent_parameters	flat/growth_rate_dependent_parameters.tsv	ParCa flat input: growth_rate_dependent_parameters.tsv	
+growth_rate_dependent_parameters	flat/growth_rate_dependent_parameters.tsv	ParCa flat input: growth_rate_dependent_parameters.tsv	GrowthRateDependentParametersSchema
 linked_metabolites	flat/linked_metabolites.tsv	ParCa flat input: linked_metabolites.tsv	
 mass_fractions__LPS_fractions	flat/mass_fractions/LPS_fractions.tsv	ParCa flat input: mass_fractions/LPS_fractions.tsv	
 mass_fractions__glycogen_fractions	flat/mass_fractions/glycogen_fractions.tsv	ParCa flat input: mass_fractions/glycogen_fractions.tsv	
@@ -88,15 +88,15 @@ new_gene_data__template__rna_half_lives	flat/new_gene_data/template/rna_half_liv
 new_gene_data__template__rnas	flat/new_gene_data/template/rnas.tsv	ParCa flat input: new_gene_data/template/rnas.tsv	
 parameters	flat/parameters.tsv	ParCa flat input: parameters.tsv	
 ppgpp_fc	flat/ppgpp_fc.tsv	ParCa flat input: ppgpp_fc.tsv	
-ppgpp_regulation	flat/ppgpp_regulation.tsv	ParCa flat input: ppgpp_regulation.tsv	
+ppgpp_regulation	flat/ppgpp_regulation.tsv	ParCa flat input: ppgpp_regulation.tsv	PpgppRegulationSchema
 ppgpp_regulation_added	flat/ppgpp_regulation_added.tsv	ParCa flat input: ppgpp_regulation_added.tsv	
 ppgpp_regulation_removed	flat/ppgpp_regulation_removed.tsv	ParCa flat input: ppgpp_regulation_removed.tsv	
-protein_half_lives_measured	flat/protein_half_lives_measured.tsv	ParCa flat input: protein_half_lives_measured.tsv	
-protein_half_lives_n_end_rule	flat/protein_half_lives_n_end_rule.tsv	ParCa flat input: protein_half_lives_n_end_rule.tsv	
-protein_half_lives_pulsed_silac	flat/protein_half_lives_pulsed_silac.tsv	ParCa flat input: protein_half_lives_pulsed_silac.tsv	
+protein_half_lives_measured	flat/protein_half_lives_measured.tsv	ParCa flat input: protein_half_lives_measured.tsv	ProteinHalfLivesMeasuredSchema
+protein_half_lives_n_end_rule	flat/protein_half_lives_n_end_rule.tsv	ParCa flat input: protein_half_lives_n_end_rule.tsv	ProteinHalfLivesNEndRuleSchema
+protein_half_lives_pulsed_silac	flat/protein_half_lives_pulsed_silac.tsv	ParCa flat input: protein_half_lives_pulsed_silac.tsv	ProteinHalfLivesPulsedSilacSchema
 proteins	flat/proteins.tsv	ParCa flat input: proteins.tsv	
 relative_metabolite_concentrations	flat/relative_metabolite_concentrations.tsv	ParCa flat input: relative_metabolite_concentrations.tsv	
-rna_half_lives	flat/rna_half_lives.tsv	ParCa flat input: rna_half_lives.tsv	
+rna_half_lives	flat/rna_half_lives.tsv	ParCa flat input: rna_half_lives.tsv	RnaHalfLivesSchema
 rna_maturation_enzymes	flat/rna_maturation_enzymes.tsv	ParCa flat input: rna_maturation_enzymes.tsv	
 rna_seq_data__doubling_times	flat/rna_seq_data/doubling_times.tsv	ParCa flat input: rna_seq_data/doubling_times.tsv	
 rna_seq_data__rnaseq_rsem_tpm_mean	flat/rna_seq_data/rnaseq_rsem_tpm_mean.tsv	ParCa flat input: rna_seq_data/rnaseq_rsem_tpm_mean.tsv	
@@ -114,14 +114,14 @@ secretions	flat/secretions.tsv	ParCa flat input: secretions.tsv
 sequence	flat/sequence.fasta	ParCa flat input: sequence.fasta	
 sequence_motifs	flat/sequence_motifs.tsv	ParCa flat input: sequence_motifs.tsv	
 tf_one_component_bound	flat/tf_one_component_bound.tsv	ParCa flat input: tf_one_component_bound.tsv	
-transcription_factors	flat/transcription_factors.tsv	ParCa flat input: transcription_factors.tsv	
+transcription_factors	flat/transcription_factors.tsv	ParCa flat input: transcription_factors.tsv	TranscriptionFactorsSchema
 transcription_units	flat/transcription_units.tsv	ParCa flat input: transcription_units.tsv	
 transcription_units_added	flat/transcription_units_added.tsv	ParCa flat input: transcription_units_added.tsv	
 transcription_units_modified	flat/transcription_units_modified.tsv	ParCa flat input: transcription_units_modified.tsv	
 transcription_units_removed	flat/transcription_units_removed.tsv	ParCa flat input: transcription_units_removed.tsv	
 transcriptional_attenuation	flat/transcriptional_attenuation.tsv	ParCa flat input: transcriptional_attenuation.tsv	
 transcriptional_attenuation_removed	flat/transcriptional_attenuation_removed.tsv	ParCa flat input: transcriptional_attenuation_removed.tsv	
-translation_efficiency	flat/translation_efficiency.tsv	ParCa flat input: translation_efficiency.tsv	
+translation_efficiency	flat/translation_efficiency.tsv	ParCa flat input: translation_efficiency.tsv	TranslationEfficiencySchema
 trna_charging_reactions	flat/trna_charging_reactions.tsv	ParCa flat input: trna_charging_reactions.tsv	
 trna_charging_reactions_added	flat/trna_charging_reactions_added.tsv	ParCa flat input: trna_charging_reactions_added.tsv	
 trna_charging_reactions_removed	flat/trna_charging_reactions_removed.tsv	ParCa flat input: trna_charging_reactions_removed.tsv	
