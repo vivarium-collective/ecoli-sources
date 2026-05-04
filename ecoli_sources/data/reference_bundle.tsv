@@ -46,7 +46,7 @@ equilibrium_reactions	flat/equilibrium_reactions.tsv	ParCa flat input: equilibri
 equilibrium_reactions_added	flat/equilibrium_reactions_added.tsv	ParCa flat input: equilibrium_reactions_added.tsv	
 equilibrium_reactions_removed	flat/equilibrium_reactions_removed.tsv	ParCa flat input: equilibrium_reactions_removed.tsv	
 fold_changes	flat/fold_changes.tsv	ParCa flat input: fold_changes.tsv	FoldChangesSchema
-fold_changes_nca	flat/fold_changes_nca.tsv	ParCa flat input: fold_changes_nca.tsv	
+fold_changes_nca	flat/fold_changes_nca.tsv	ParCa flat input: fold_changes_nca.tsv	FoldChangesSchema
 fold_changes_removed	flat/fold_changes_removed.tsv	ParCa flat input: fold_changes_removed.tsv	
 footprint_sizes	flat/footprint_sizes.tsv	ParCa flat input: footprint_sizes.tsv	
 gene_fragments	flat/gene_fragments.tsv	ParCa flat input: gene_fragments.tsv	
