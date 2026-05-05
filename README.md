@@ -99,19 +99,32 @@ uv run python -m schemas.validate RnaseqTpmTableSchema ecoli_sources/data/rnaseq
 uv run python -m schemas.validate RnaseqSamplesManifestSchema ecoli_sources/data/rnaseq_experimental/manifest.tsv
 ```
 
-Validate the manifest and every TPM file it references (also run in CI):
+Validate the full bundle (manifest schema, every `source_path`
+resolves, schema-validated rows pass content checks) — also run in CI:
 
 ```bash
 uv run python scripts/validate_all.py
 ```
 
+Validate an arbitrary bundle path (e.g. a variant) with the same
+three-stage pipeline:
+
+```bash
+uv run python scripts/validate_bundle.py path/to/reference_bundle.tsv
+```
+
 ## Use from vEcoli
 
-vEcoli's ParCa reads datasets via `rnaseq_manifest_path` +
-`rnaseq_basal_dataset_id` in its config. Point it at this repo's
-`ecoli_sources/data/rnaseq_experimental/manifest.tsv` (via the
-`$ECOLI_SOURCES` environment variable or a direct path), or import
-`ecoli_sources.BUNDLE_PATH` for the full reference bundle.
+vEcoli's ParCa resolves every flat-file input through this repo's
+**reference bundle** at `ecoli_sources.BUNDLE_PATH`
+(`ecoli_sources/data/reference_bundle.tsv`). When ParCa is run with no
+override, the default bundle is loaded automatically; to use a
+variant, point ParCa at a different manifest via its
+`bundle_manifest_path` config option.
+
+See [`BUNDLES.md`](./BUNDLES.md) for the bundle authoring guide
+(canonical keys, manifest schema, validation pipeline, adding keys,
+creating variants).
 
 ## Generating perturbation variants
 
