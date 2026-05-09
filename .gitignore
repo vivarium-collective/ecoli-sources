@@ -2,10 +2,11 @@
 __pycache__/
 *.pyc
 .venv/
+*.egg-info/
 
 # Perturbations are regenerated locally via vEcoli's
 # runscripts/run_sensitivity_campaign.py — blobs don't belong in git.
-# The campaign meta-runner rewrites data/manifest.tsv with provenance
+# The campaign meta-runner rewrites the rnaseq manifest with provenance
 # rows for these generated datasets; the canonical primary manifest
 # should be pulled from git before running any campaign.
-data/perturbations/
+ecoli_sources/data/rnaseq_experimental/perturbations/

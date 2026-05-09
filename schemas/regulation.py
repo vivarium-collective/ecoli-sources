@@ -68,10 +68,14 @@ FoldChangesSchema = pa.DataFrameSchema(
             description="Std dev of log2 fold change across replicates.",
         ),
         "Regulation_direct": pa.Column(
-            int, nullable=True, required=False,
+            float, nullable=True, required=False,
             description=(
-                "Direct-regulation confidence code (int; meaning defined "
-                "by the source curation, typically 1=direct, 2=inferred)."
+                "Direct-regulation confidence code (typically 1=direct, "
+                "2=inferred; meaning defined by the source curation). "
+                "Stored as float so all-NaN columns (e.g. NCA-derived "
+                "fold-change tables, where this annotation is not "
+                "carried) validate alongside curated tables that "
+                "populate it with 1/2."
             ),
         ),
     },

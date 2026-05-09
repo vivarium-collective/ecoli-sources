@@ -13,3 +13,13 @@ dependencies = [
     "pandera>=0.19",
     "jupyter>=1.0",
 ]
+
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["ecoli_sources*", "schemas*", "analysis*", "processing*"]
+
+[tool.setuptools.package-data]
+ecoli_sources = ["data/**/*"]
