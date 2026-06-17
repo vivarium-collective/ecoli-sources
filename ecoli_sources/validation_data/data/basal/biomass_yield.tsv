@@ -1,0 +1,2 @@
+source_id	value	units	kind	method	uncertainty	strain	notes
+varma_1993	0.538	gDW/g_glucose	theoretical_max	FBA		E. coli network	Table III biomass row, fully aerobic, no maintenance energy; 0.097 gDW/mmol glc / 0.180156 g/mmol = 0.538

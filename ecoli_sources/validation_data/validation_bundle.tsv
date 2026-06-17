@@ -1,0 +1,2 @@
+canonical_key	source_path	description	schema_name
+basal__biomass_yield	data/basal/biomass_yield.tsv	Basal aerobic growth on glucose minimal media: biomass yield Yxs (gDW per g glucose). Measured values are the grade target; theoretical_max rows are first-principles ceilings.	ScalarClaimSchema

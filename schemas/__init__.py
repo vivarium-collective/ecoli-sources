@@ -11,6 +11,9 @@ Organization:
 
 * ``reference_bundle`` — bundle manifest (canonical_key → source_path)
   defining the data package's contract with vEcoli.
+* ``validation_claim`` — the validation-data subsystem: a separate manifest
+  (no required-keys contract) + scalar reference-claim tables that model
+  *outputs* are graded against. See ``ecoli_sources/validation_data/README.md``.
 * ``rnaseq`` — per-condition TPM tables + samples manifest (Chris).
 * ``adjustments`` — parca-time manual overrides (flat/adjustments/*).
 * ``parameters`` — growth-rate-dependent physiological parameters.
@@ -20,6 +23,10 @@ Organization:
 """
 
 from .reference_bundle import ReferenceBundleSchema
+from .validation_claim import (
+    ScalarClaimSchema,
+    ValidationBundleSchema,
+)
 from .adjustments import (
     AdjustmentValueSchema,
     AminoAcidPathwayAdjustmentSchema,
@@ -51,6 +58,9 @@ from .translation import TranslationEfficiencySchema
 __all__ = [
     # reference_bundle
     "ReferenceBundleSchema",
+    # validation-data subsystem
+    "ValidationBundleSchema",
+    "ScalarClaimSchema",
     # rnaseq
     "RnaseqTpmTableSchema",
     "RnaseqSamplesManifestSchema",

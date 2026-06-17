@@ -1,0 +1,7 @@
+# Raw source documents (papers, datasets) are copyrighted and/or large —
+# keep them local. Each source's provenance lives in its committed summary.md.
+*.pdf
+*.xlsx
+*.xls
+*.docx
+*.zip
