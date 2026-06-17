@@ -1,0 +1,5 @@
+source_id	value	units	kind	method	uncertainty	strain	notes
+varma_1994	0.68	1/h	measured	aerobic batch		W3110	Fig 2, aerobic batch exponential growth rate
+lacroix_2015	0.69	1/h	measured	aerobic batch	0.02	MG1655	Table 3 wild-type MG1655, M9 glucose; +/-95% CI
+long_2017	0.677	1/h	measured	13C-MFA aerobic batch	0.002	MG1655	mmc4 Growth Data, WT MG1655, M9 glucose
+kavvas_2022	0.81	1/h	measured	13C-MFA	0.03	MG1655	Suppl S7, WT MG1655 (Estimated growth rate)

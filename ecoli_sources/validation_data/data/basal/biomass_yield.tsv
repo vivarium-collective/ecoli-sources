@@ -1,2 +1,6 @@
 source_id	value	units	kind	method	uncertainty	strain	notes
 varma_1993	0.538	gDW/g_glucose	theoretical_max	FBA		E. coli network	Table III biomass row, fully aerobic, no maintenance energy; 0.097 gDW/mmol glc / 0.180156 g/mmol = 0.538
+varma_1994	0.355	gDW/g_glucose	measured	aerobic batch		W3110	Fig 2: 0.064 gDW/mmol glc / 0.180156 = 0.355 (aerobic batch). Strain W3110 (model is MG1655). NB the paper's 0.43/h is the ANAEROBIC growth rate (Fig 3), not a yield.
+lacroix_2015	0.44	gDW/g_glucose	measured	aerobic batch	0.07	MG1655	Table 3 wild-type K-12 MG1655 (ancestral, pre-ALE), M9 glucose; +/-95% CI. Strain matches the model.
+long_2017	0.444	gDW/g_glucose	measured	13C-MFA aerobic batch	0.022	MG1655	mmc4 Growth Data, WT MG1655, M9 glucose aerobic; +/-SE. O2 uptake 11.59 + acetate 5.57 also reported; full intracellular 13C fluxome in mmc1 (deferred).
+kavvas_2022	0.42	gDW/g_glucose	measured	13C-MFA	0.02	MG1655	Suppl S7, WT MG1655 (Estimated biomass yield); +/-SE. Higher mu (0.81) than Long/LaCroix; full multi-strain 13C fluxome in S7 (deferred).
