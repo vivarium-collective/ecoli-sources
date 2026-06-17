@@ -22,4 +22,4 @@ build-backend = "setuptools.build_meta"
 include = ["ecoli_sources*", "schemas*", "analysis*", "processing*"]
 
 [tool.setuptools.package-data]
-ecoli_sources = ["data/**/*"]
+ecoli_sources = ["data/**/*", "validation_data/**/*"]
