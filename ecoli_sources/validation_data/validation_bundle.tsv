@@ -6,3 +6,4 @@ basal__metabolic_fluxes	data/basal/metabolic_fluxes.tsv	Basal aerobic central-ca
 basal__o2_uptake	data/basal/o2_uptake.tsv	Basal aerobic specific oxygen uptake rate (OUR, mmol/gDW/h) on glucose minimal media.	ScalarClaimSchema
 basal__co2_evolution	data/basal/co2_evolution.tsv	Basal aerobic specific CO2 evolution rate (CER, mmol/gDW/h) on glucose minimal media; with o2_uptake gives the respiratory quotient RQ = CER/OUR.	ScalarClaimSchema
 basal__acetate_secretion	data/basal/acetate_secretion.tsv	Basal aerobic acetate secretion rate (mmol/gDW/h) on glucose minimal media; the overflow-metabolism axis.	ScalarClaimSchema
+basal__proteome	data/basal/proteome.tsv	Basal aerobic proteome on glucose minimal media: per-gene absolute protein abundance (copies/cell, vector). One row per (source, gene).	ProteinAbundanceSchema

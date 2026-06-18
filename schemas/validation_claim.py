@@ -293,3 +293,101 @@ ReactionFluxSchema = pa.DataFrameSchema(
         "vector analogue of ScalarClaimSchema for ¹³C-MFA flux maps."
     ),
 )
+
+
+# ---------------------------------------------------------------------------
+# Protein-abundance claim table: a VECTOR reference (per-gene proteome)
+# ---------------------------------------------------------------------------
+
+# The proteome analogue of ReactionFluxSchema: a per-gene protein-abundance
+# vector for one (condition, observable) slot, keyed within the vector by
+# ``gene``. One row per (source, gene). A consumer grades the model's per-gene
+# protein counts against this vector (typically a log-log R²). Abundances are
+# absolute copies per cell; ``cv`` carries the reported coefficient of variation
+# across replicates when available.
+ProteinAbundanceSchema = pa.DataFrameSchema(
+    name="protein_abundance",
+    columns={
+        "source_id": pa.Column(
+            dtype=str,
+            nullable=False,
+            description=(
+                "Provenance key. Must match a directory under "
+                "``validation_data/references/<source_id>/`` and (ideally) a "
+                "BibTeX entry in ``validation_data/references.bib``."
+            ),
+        ),
+        "gene": pa.Column(
+            dtype=str,
+            nullable=False,
+            description=(
+                "Within-vector key — the gene name as the source reports it "
+                "(model-agnostic; mapping to a model monomer is a downstream "
+                "concern)."
+            ),
+        ),
+        "value": pa.Column(
+            float,
+            nullable=False,
+            description="Protein abundance, expressed in ``units``.",
+        ),
+        "units": pa.Column(
+            dtype=str,
+            nullable=False,
+            description="Units of ``value`` (e.g. ``copies/cell``).",
+        ),
+        "kind": pa.Column(
+            dtype=str,
+            nullable=False,
+            checks=pa.Check.isin(_KINDS),
+            description="One of measured | theoretical_max | model_predicted.",
+        ),
+        "uniprot_id": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description="Optional UniProt accession for the protein.",
+        ),
+        "cv": pa.Column(
+            float,
+            nullable=True,
+            required=False,
+            checks=pa.Check.greater_than_or_equal_to(0),
+            description=(
+                "Optional coefficient of variation across replicates "
+                "(relative; the source's reported measurement spread)."
+            ),
+        ),
+        "condition": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description="Growth condition (e.g. ``M9 glucose``), if relevant.",
+        ),
+        "strain": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description="Strain background (e.g. MG1655), if reported.",
+        ),
+        "method": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description="How abundance was measured (e.g. LC-MS/MS iBAQ).",
+        ),
+        "notes": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description="Free-text caveats.",
+        ),
+    },
+    strict="filter",  # allow extra columns; validate the required ones
+    coerce=True,
+    description=(
+        "Curated per-gene protein-abundance reference (vector) for one "
+        "(condition, observable) slot; one row per (source, gene). The proteome "
+        "analogue of ReactionFluxSchema."
+    ),
+)

@@ -65,6 +65,10 @@ contributes many addressable rows keyed by a within-vector id. Today:
   course carries a `timepoint`; such a course is a trajectory rather than
   replicate measurements — see the per-source `summary.md` before aggregating
   across timepoints.
+- **`ProteinAbundanceSchema`** (`data/basal/proteome.tsv`) — proteome maps,
+  keyed by `gene`, one row per `(source, gene)`; `value` is absolute protein
+  abundance (copies/cell) with an optional replicate `cv`. The proteome analogue
+  of the flux vector (typically graded as a log-log R² over shared genes).
 
 ## Consuming it
 

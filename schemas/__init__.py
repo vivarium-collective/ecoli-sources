@@ -24,6 +24,7 @@ Organization:
 
 from .reference_bundle import ReferenceBundleSchema
 from .validation_claim import (
+    ProteinAbundanceSchema,
     ReactionFluxSchema,
     ScalarClaimSchema,
     ValidationBundleSchema,
@@ -63,6 +64,7 @@ __all__ = [
     "ValidationBundleSchema",
     "ScalarClaimSchema",
     "ReactionFluxSchema",
+    "ProteinAbundanceSchema",
     # rnaseq
     "RnaseqTpmTableSchema",
     "RnaseqSamplesManifestSchema",
