@@ -50,6 +50,22 @@ a card treats differently:
 Every `source_id` must resolve to a `references/<source_id>/` page (enforced by
 `scripts/validate_all.py`), keeping each curated number tied to its provenance.
 
+### Scalar vs vector claims
+
+A scalar observable (`biomass_yield`, `growth_rate`, …) uses `ScalarClaimSchema`
+— one `value` per source. An observable that is a **vector** — a per-reaction
+flux map, a per-gene proteome — uses a vector schema instead, where one source
+contributes many addressable rows keyed by a within-vector id. Today:
+
+- **`ReactionFluxSchema`** (`data/basal/metabolic_fluxes.tsv`) — ¹³C-MFA flux
+  maps, keyed by `reaction_id`, one row per `(source, reaction, timepoint)`.
+  Each row carries both `value` (absolute flux) and `value_relative_pct` (flux
+  normalized to glucose uptake), so a consumer can compare absolute fluxes or
+  scale-invariant carbon routing as appropriate. A source reporting a time
+  course carries a `timepoint`; such a course is a trajectory rather than
+  replicate measurements — see the per-source `summary.md` before aggregating
+  across timepoints.
+
 ## Consuming it
 
 ```python
