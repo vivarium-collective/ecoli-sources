@@ -1,0 +1,2 @@
+source_id	value	units	kind	method	uncertainty	strain	notes
+crown_2015	16.84	mmol/gDW/h	measured	COMPLETE-MFA (14 parallel labeling expts)	0.298	MG1655	derived: CO2.Ext flux 160.1 per 100 glucose (Suppl Table S4, also metabolic_fluxes crown_f66) x q_glc 10.5. Crown RQ = CER/OUR = 160.1/142.8 = 1.12.

@@ -24,6 +24,15 @@ The supplement also reports 23 exchange (reversibility) fluxes and per-amino-aci
 G-values, and per-tracer flux maps for each of the 14 individual experiments;
 only the integrated intracellular net fluxes are ingested here.
 
+Among the 71 fluxes are the **boundary exchanges** used by the scalar exchange
+slots (`basal__o2_uptake`, `basal__co2_evolution`, `basal__acetate_secretion`):
+`crown_f67` O₂ uptake (142.8 per 100 glucose), `crown_f66` CO₂ evolution (160.1),
+`crown_f35` acetate secretion (66.8; yield 0.668 mol/mol). Those slots store the
+**absolute** form, obtained by scaling the normalized value by the absolute
+glucose uptake rate `q_glc ≈ 10.5 mmol/gDW/h` (= μ/(Yxs·M_glc) = 0.72/(0.38·0.180));
+the conversion is noted on each row. The respiratory quotient implied by the
+COMPLETE-MFA fit is RQ = CER/OUR = 160.1/142.8 = **1.12**.
+
 ## ¹³C-MFA study design (Materials & Methods)
 
 - **Method: COMPLETE-MFA** (complementary parallel labeling experiments) —

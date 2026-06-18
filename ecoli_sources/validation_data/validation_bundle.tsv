@@ -3,3 +3,6 @@ basal__biomass_yield	data/basal/biomass_yield.tsv	Basal aerobic growth on glucos
 basal__growth_rate	data/basal/growth_rate.tsv	Basal aerobic exponential growth rate mu (1/h) on glucose minimal media.	ScalarClaimSchema
 basal__glucose_uptake	data/basal/glucose_uptake.tsv	Basal aerobic specific glucose uptake rate q_glc (mmol/gDW/h) on glucose minimal media. With growth_rate and biomass_yield, two of these three are independent (Yxs = mu / (q_glc * M_glc)).	ScalarClaimSchema
 basal__metabolic_fluxes	data/basal/metabolic_fluxes.tsv	Basal aerobic central-carbon intracellular reaction fluxes (per-reaction vector, 13C-MFA). Each row carries absolute value and value_relative_pct (normalized to glucose uptake). One row per (source, reaction, timepoint).	ReactionFluxSchema
+basal__o2_uptake	data/basal/o2_uptake.tsv	Basal aerobic specific oxygen uptake rate (OUR, mmol/gDW/h) on glucose minimal media.	ScalarClaimSchema
+basal__co2_evolution	data/basal/co2_evolution.tsv	Basal aerobic specific CO2 evolution rate (CER, mmol/gDW/h) on glucose minimal media; with o2_uptake gives the respiratory quotient RQ = CER/OUR.	ScalarClaimSchema
+basal__acetate_secretion	data/basal/acetate_secretion.tsv	Basal aerobic acetate secretion rate (mmol/gDW/h) on glucose minimal media; the overflow-metabolism axis.	ScalarClaimSchema
