@@ -18,13 +18,20 @@ alongside). `cv` is the reported coefficient of variation across biological
 triplicates. Source: Supplementary **Table S9**, column
 `Copies/Cell_MG1655.Glucose` (with `cv_MG1655.Glucose`).
 
-**Strain choice.** Schmidt's main 22-condition abundance map (Supplementary
-Table S6) is for **BW25113** (the Keio parent). Table S9 additionally quantifies
-**MG1655** and NCM3722 at glucose and LB by the same method. We take the
-**MG1655 glucose** column because it is **strain-matched to the model**; the
-BW25113 glucose column (S6, ~2359 proteins — the basis of the legacy v2ecoli
-`schmidt2015_javier_table` reference) and S9's same-table `BW25113.Glucose` are
-available as alternatives / a strain cross-check.
+**Strain choice — by use case.** Schmidt quantified the proteome across all 22
+conditions only for **BW25113** (Supplementary Table S6); Table S9 additionally
+quantifies **MG1655** and NCM3722, but only at glucose and LB. The two strains
+suit different references:
+
+- **MG1655 glucose** (S9) — **strain-matched to the model**; used here as the
+  basal proteome reference.
+- **BW25113** (S6, ~2359 proteins; also the basis of the legacy v2ecoli
+  `schmidt2015_javier_table`) — the only strain with the **full 22-condition**
+  coverage, and the **parent strain of the Keio knockout collection**. It is the
+  natural reference for multi-condition (carbon-source / stress) proteome
+  comparisons and for knockout studies, where condition/genotype coverage
+  matters more than matching the model's exact wild-type background. S9 also
+  carries a same-method `BW25113.Glucose` column for a direct strain cross-check.
 
 ## Measurement design (Materials & Methods)
 
