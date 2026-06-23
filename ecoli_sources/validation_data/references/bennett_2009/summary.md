@@ -24,8 +24,17 @@ which is glucose-only). One row per `(metabolite, condition)`:
 - **`significance`** — the paper's cross-condition significance flag
   (1 = glucose vs glycerol; 2 = glucose vs acetate; 3 = glycerol vs acetate
   significantly different at FDR 0.05).
-- `metabolite` is the name as the paper reports it; `ecocyc_id` is left blank
-  (mapping model metabolite ids is a downstream/wiring concern).
+- `metabolite` is the name as the paper reports it; `ecocyc_id` carries the
+  corresponding EcoCyc / model compound frame id where one exists (**93 of the
+  103** metabolites). It is left **blank** for the 10 that have no single id:
+  three are footnoted **lumped pools** (`hexose-P` = F6P+G6P+G1P, `pentose-P`
+  = R5P+Ru5P+X5P, `isoleucine+leucine` co-eluted) that map to several ids, and
+  seven are species not carried as Bennett concentration targets in the
+  reconstruction (`flavin mononucleotide`, `glutathione disulfide`,
+  `inosine-mono/di/tri-phosphate`, `deoxyribose-5-P`, `PRPP`). The ids were
+  assigned by joining the published names against the reconstruction's
+  Bennett-curated `metabolite_concentrations.tsv` (name + 2-significant-figure
+  value agreement).
 
 The **basal** card uses the **glucose** rows; glycerol/acetate are retained for
 future multi-condition work.
@@ -57,6 +66,10 @@ future multi-condition work.
 - The **glucose** column of SI Table 3 reproduces main-text Table 1 (with full
   precision and CIs); spot-checks agree (glutamate 9.6×10⁻², acetyl-CoA
   6.06×10⁻⁴, 6-phosphogluconate 3.77×10⁻³).
+- **Ingestion fixes:** one name was repaired from a PDF-extraction truncation —
+  `phosphate` (3.74×10⁻⁴) → `dihydroxyacetone phosphate` (value + EcoCyc
+  `DIHYDROXY-ACETONE-PHOSPHATE` confirm); `isoleucine+leuicine` →
+  `isoleucine+leucine`.
 
 ## Other data in the same SI (not ingested here)
 
