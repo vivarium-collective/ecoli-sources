@@ -391,3 +391,218 @@ ProteinAbundanceSchema = pa.DataFrameSchema(
         "analogue of ReactionFluxSchema."
     ),
 )
+
+
+# ---------------------------------------------------------------------------
+# Metabolite-concentration claim table: a VECTOR reference (per-metabolite pools)
+# ---------------------------------------------------------------------------
+
+# The metabolome analogue of ReactionFluxSchema / ProteinAbundanceSchema: a
+# per-metabolite absolute-concentration vector, keyed within the vector by
+# ``metabolite``. One row per (source, metabolite, condition) — a single source
+# (e.g. Bennett 2009) reports the same metabolite across several carbon sources,
+# so ``condition`` discriminates the rows. ``ci_low`` / ``ci_high`` carry the
+# reported (often asymmetric, e.g. 95% CI) concentration bounds; ``significance``
+# carries a source-specific flag for cross-condition differences.
+MetaboliteConcentrationSchema = pa.DataFrameSchema(
+    name="metabolite_concentration",
+    columns={
+        "source_id": pa.Column(
+            dtype=str,
+            nullable=False,
+            description=(
+                "Provenance key. Must match a directory under "
+                "``validation_data/references/<source_id>/`` and (ideally) a "
+                "BibTeX entry in ``validation_data/references.bib``."
+            ),
+        ),
+        "metabolite": pa.Column(
+            dtype=str,
+            nullable=False,
+            description=(
+                "Within-vector key — the metabolite name as the source reports "
+                "it (model-agnostic; mapping to a model metabolite id is a "
+                "downstream concern, carried in ``ecocyc_id`` when resolved)."
+            ),
+        ),
+        "value": pa.Column(
+            float,
+            nullable=False,
+            checks=pa.Check.greater_than_or_equal_to(0),
+            description="Absolute intracellular concentration, expressed in ``units``.",
+        ),
+        "units": pa.Column(
+            dtype=str,
+            nullable=False,
+            description="Units of ``value`` (e.g. ``mol/L``).",
+        ),
+        "kind": pa.Column(
+            dtype=str,
+            nullable=False,
+            checks=pa.Check.isin(_KINDS),
+            description="One of measured | theoretical_max | model_predicted.",
+        ),
+        "condition": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description=(
+                "Carbon source / growth condition (e.g. ``glucose``, "
+                "``glycerol``, ``acetate``). Discriminates a source's rows when "
+                "it reports the same metabolite across conditions."
+            ),
+        ),
+        "ci_low": pa.Column(
+            float,
+            nullable=True,
+            required=False,
+            checks=pa.Check.greater_than_or_equal_to(0),
+            description="Lower bound of the reported concentration interval (e.g. 95% CI).",
+        ),
+        "ci_high": pa.Column(
+            float,
+            nullable=True,
+            required=False,
+            checks=pa.Check.greater_than_or_equal_to(0),
+            description="Upper bound of the reported concentration interval (e.g. 95% CI).",
+        ),
+        "significance": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description=(
+                "Optional source-specific flag for statistically significant "
+                "cross-condition differences."
+            ),
+        ),
+        "ecocyc_id": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description=(
+                "Optional mapping of ``metabolite`` to a model/EcoCyc metabolite "
+                "id, for model comparison. Blank where not yet resolved."
+            ),
+        ),
+        "strain": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description="Strain background (e.g. NCM3722), if reported.",
+        ),
+        "method": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description="How concentrations were measured (e.g. LC-MS/MS isotope-ratio).",
+        ),
+        "notes": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description="Free-text caveats: media, growth mode, extraction notes.",
+        ),
+    },
+    strict="filter",  # allow extra columns; validate the required ones
+    coerce=True,
+    description=(
+        "Curated per-metabolite absolute-concentration reference (vector) for "
+        "one (condition, observable) slot; one row per (source, metabolite, "
+        "condition). The metabolome analogue of ReactionFluxSchema."
+    ),
+)
+
+
+# ---------------------------------------------------------------------------
+# Macromolecular-composition claim table: a VECTOR reference (dry-mass fractions)
+# ---------------------------------------------------------------------------
+
+# A per-component dry-mass-fraction vector (protein / RNA / DNA), keyed within
+# the vector by ``component``. Distinct from the ParCa input
+# ``DryMassCompositionSchema`` (schemas/parameters.py), which is data fed INTO
+# the model; this is an independent literature reference model outputs are graded
+# AGAINST. Macromolecular composition is growth-rate-dependent, so one row per
+# (source, component, doubling_time): a consumer grades against the row (or
+# interpolation) matching the model's growth rate.
+MacromoleculeCompositionSchema = pa.DataFrameSchema(
+    name="macromolecule_composition",
+    columns={
+        "source_id": pa.Column(
+            dtype=str,
+            nullable=False,
+            description=(
+                "Provenance key. Must match a directory under "
+                "``validation_data/references/<source_id>/`` and (ideally) a "
+                "BibTeX entry in ``validation_data/references.bib``."
+            ),
+        ),
+        "component": pa.Column(
+            dtype=str,
+            nullable=False,
+            description=(
+                "Within-vector key — the dry-mass component (e.g. ``protein``, "
+                "``rna``, ``dna``). RNA is total RNA (rRNA+tRNA+mRNA)."
+            ),
+        ),
+        "value": pa.Column(
+            float,
+            nullable=False,
+            checks=pa.Check.in_range(0, 1),
+            description="Fraction of total dry weight (0–1), expressed in ``units``.",
+        ),
+        "units": pa.Column(
+            dtype=str,
+            nullable=False,
+            description="Units of ``value`` (e.g. ``fraction_dry_weight``).",
+        ),
+        "kind": pa.Column(
+            dtype=str,
+            nullable=False,
+            checks=pa.Check.isin(_KINDS),
+            description="One of measured | theoretical_max | model_predicted.",
+        ),
+        "doubling_time_min": pa.Column(
+            float,
+            nullable=True,
+            required=False,
+            checks=pa.Check.greater_than(0),
+            description=(
+                "Doubling time (min) — the growth-rate index. Composition is "
+                "growth-rate-dependent; grade against the matching doubling time."
+            ),
+        ),
+        "growth_rate_doublings_per_h": pa.Column(
+            float,
+            nullable=True,
+            required=False,
+            checks=pa.Check.greater_than(0),
+            description="Growth rate in doublings/h (= 60 / doubling_time_min).",
+        ),
+        "strain": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description="Strain background (e.g. B/r), if reported.",
+        ),
+        "method": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description="How composition was obtained.",
+        ),
+        "notes": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description="Free-text caveats: media, strain, growth-rate-curve provenance.",
+        ),
+    },
+    strict="filter",  # allow extra columns; validate the required ones
+    coerce=True,
+    description=(
+        "Curated per-component dry-mass-fraction reference (vector) for one "
+        "(condition, observable) slot; one row per (source, component, "
+        "doubling_time). An independent literature reference (graded AGAINST), "
+        "distinct from the ParCa-input DryMassCompositionSchema."
+    ),
+)

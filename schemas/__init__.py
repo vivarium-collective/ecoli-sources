@@ -24,6 +24,8 @@ Organization:
 
 from .reference_bundle import ReferenceBundleSchema
 from .validation_claim import (
+    MacromoleculeCompositionSchema,
+    MetaboliteConcentrationSchema,
     ProteinAbundanceSchema,
     ReactionFluxSchema,
     ScalarClaimSchema,
@@ -65,6 +67,8 @@ __all__ = [
     "ScalarClaimSchema",
     "ReactionFluxSchema",
     "ProteinAbundanceSchema",
+    "MetaboliteConcentrationSchema",
+    "MacromoleculeCompositionSchema",
     # rnaseq
     "RnaseqTpmTableSchema",
     "RnaseqSamplesManifestSchema",
