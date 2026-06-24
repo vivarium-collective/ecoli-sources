@@ -5,8 +5,10 @@
   "Overflow metabolism in *Escherichia coli* results from efficient proteome
   allocation." *Nature* 528(7580):99–104, 2015. DOI 10.1038/nature15765.
   (BibTeX `basan_2015` in `../../references.bib`.)
-- **Raw (local, gitignored):** the main-text PDF + the Fig. 1 source-data
-  supplement (`MOESM62`, = Extended Data Table 1).
+- **Raw (local, gitignored):** the main-text PDF, the Fig. 1 source-data
+  supplement (`MOESM62`, = Extended Data Table 1), and the Supplementary
+  Information PDF (`MOESM68`, = Supplementary Note 1 — the model derivation +
+  fitted parameters used for the carbon-yield conversion below).
 
 ## What is ingested (`data/perturbation/overflow/acetate_vs_growth.tsv`)
 
@@ -55,17 +57,45 @@ The `curve_response` criterion grades a model's acetate-vs-*λ* response on the
   this (clamp *λ*, let uptake follow). A model GUR sweep (clamp the uptake bound →
   *λ* emerges) mirrors the titration's causal direction.
 
-## ⚠️ Unit reconciliation (a grade-time assumption, NOT from this paper)
+## Units & grading as a dimensionless carbon yield
 
-*J*ac is reported in **mM/OD600/h**; the v2ecoli observable is the acetate
-exchange flux in **mmol/gDCW/h**. The OD600→gDCW factor is **not stated in Basan
-2015** (everything is per-OD). Two faithful options, decided at grade time:
-(1) convert the experimental *J*ac with an **externally-sourced** NCM3722 factor
-(companion Hwa-lab papers; ~0.4–0.5 gDCW·L⁻¹·OD600⁻¹), flagged with its own
-citation; or (2) convert the **model** side to per-OD and grade in the reported
-units. **No unsourced factor is baked into the TSV** — values are as-reported.
-The overflow **onset** (a growth-rate threshold) is unit-invariant and gradeable
-without this factor; the **slope** is not.
+*J*ac is reported **per OD600** (mM/OD600/h); the v2ecoli observable is the
+acetate exchange flux in **mmol/gDCW/h**. Rather than import an unsourced
+OD600→gDCW factor, the overflow card grades a **dimensionless acetate-carbon
+yield** `Y_ac = acetate-C / total-carbon-influx` — per-OD vs per-gDCW cancels on
+both sides, so no factor is needed. The slot stores *J*ac **as-reported**; the
+conversion below is applied **in the consumer** (the card render/grader), not
+baked into the data.
+
+**The conversion (from Basan's own Supplementary Note 1 — `MOESM68`).** Basan's
+proteome-allocation model gives every parameter as a number:
+
+- `Sac = 1/3` — acetate molecules per carbon atom into fermentation, so
+  fermentative carbon in = 3·*J*ac and acetate-carbon = 2·*J*ac (1 C → CO₂).
+- `ef = 2`, `er = 4.4` — ATP per carbon for fermentation / respiration.
+- `σ ≈ 45.7` mM/OD600 — energy demand, `J_E = σ·λ` (= `J_E,f + J_E,r`).
+- `β ≈ 28.5` mM/OD600 — biomass carbon demand, `J_C,BM = β·λ`.
+- `λac ≈ 0.76` h⁻¹ — the WT acetate-line threshold.
+
+With the carbon balance `J_C,in = J_C,BM + J_C,f + J_C,r`, `J_E,f = ef·J_C,f`,
+`J_C,r = J_E,r/er`, this collapses (per point) to:
+
+```
+J_C,in(λ) = (β + σ/er)·λ + (3 − 3·ef/er)·Jac  =  38.9·λ + 1.64·Jac    [mM/OD600/h, carbon]
+Y_ac      = 2·Jac / J_C,in                                            [dimensionless]
+```
+
+Worked on the graded `ptsG_glucose` series: *Y*ac = 0, 0.002, 0.038, **0.10** at
+λ = 0.58 / 0.64 / 0.82 / 0.95 — the threshold-linear overflow shape, unit-free.
+Sanity vs an independent ¹³C anchor: NCM3722 ≈0.10 at λ≈1.0 vs MG1655 (Long 2017)
+~0.22 at λ≈0.68 — NCM3722 overflows ~2× less, the known strain difference, in the
+right direction.
+
+**Caveat:** *Y*ac is **model-derived** (it carries Basan's flux-partition
+assumptions — `J_E = σλ`, `J_C,BM = βλ`, `ef`/`er`), not a raw ¹³C flux — but it
+is their published, fitted model, fully sourced to `MOESM68`. The overflow
+**onset** (a growth-rate threshold) is unit-invariant and gradeable directly from
+*J*ac without any of this; the conversion is needed only for the **slope/magnitude**.
 
 ## Notes
 
