@@ -28,6 +28,7 @@ from .validation_claim import (
     MetaboliteConcentrationSchema,
     ProteinAbundanceSchema,
     ReactionFluxSchema,
+    ResponseCurveSchema,
     ScalarClaimSchema,
     ValidationBundleSchema,
 )
@@ -73,6 +74,7 @@ __all__ = [
     "ProteinAbundanceSchema",
     "MetaboliteConcentrationSchema",
     "MacromoleculeCompositionSchema",
+    "ResponseCurveSchema",
     # cultivation-centric validation layer
     "CultivationRegistrySchema",
     "ScalarObservationSchema",

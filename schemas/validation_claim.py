@@ -606,3 +606,141 @@ MacromoleculeCompositionSchema = pa.DataFrameSchema(
         "distinct from the ParCa-input DryMassCompositionSchema."
     ),
 )
+
+
+# ---------------------------------------------------------------------------
+# Response-curve claim table: a SWEPT-RESPONSE reference (observable vs a driver)
+# ---------------------------------------------------------------------------
+
+# A perturbation/response reference: an observable measured along a swept driver
+# (e.g. acetate excretion vs growth rate — Basan 2015's overflow curve). Unlike
+# the basal (single-condition) schemas, this carries a whole CURVE per source:
+# one row per (source, series, level), keyed within by ``series`` (one curve) and
+# ordered along ``growth_rate_per_h`` (the x-axis the source plots against, which
+# in the model is an EMERGENT output of the swept knob). ``perturbation``/``level``
+# record HOW the point was set (e.g. inducer level, carbon source, mutant). A
+# single source contributes several series (Basan: titration / carbon-source /
+# mutant), discriminated by ``series_type``; a consumer grades the apples-to-apples
+# series for its sweep (e.g. the glucose uptake-titration series) with the
+# ``curve_response`` criterion (overflow onset + slope). ``value`` may be negative
+# (measurement noise around zero below onset), so it carries no non-negativity check.
+ResponseCurveSchema = pa.DataFrameSchema(
+    name="response_curve",
+    columns={
+        "source_id": pa.Column(
+            dtype=str,
+            nullable=False,
+            description=(
+                "Provenance key. Must match a directory under "
+                "``validation_data/references/<source_id>/`` and (ideally) a "
+                "BibTeX entry in ``validation_data/references.bib``."
+            ),
+        ),
+        "series": pa.Column(
+            dtype=str,
+            nullable=False,
+            description=(
+                "Within-vector key — the curve this point belongs to (e.g. "
+                "``ptsG_glucose``). One source reports several series; a consumer "
+                "grades the series matching its sweep."
+            ),
+        ),
+        "growth_rate_per_h": pa.Column(
+            float,
+            nullable=False,
+            checks=pa.Check.greater_than_or_equal_to(0),
+            description=(
+                "The curve x-axis: growth rate (1/h) the source plots the "
+                "observable against. In the model this is an EMERGENT output at "
+                "each swept-knob setting, matching the source's causal direction."
+            ),
+        ),
+        "value": pa.Column(
+            float,
+            nullable=False,
+            description=(
+                "The observable (curve y-value) at this point, in ``units``. May "
+                "be negative (measurement noise around zero below the onset)."
+            ),
+        ),
+        "units": pa.Column(
+            dtype=str,
+            nullable=False,
+            description="Units of ``value`` (e.g. ``mM/OD600/h``).",
+        ),
+        "kind": pa.Column(
+            dtype=str,
+            nullable=False,
+            checks=pa.Check.isin(_KINDS),
+            description="One of measured | theoretical_max | model_predicted.",
+        ),
+        "series_type": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description=(
+                "Optional class of the series — how growth rate was varied (e.g. "
+                "``uptake_titration``, ``carbon_source``, ``uptake_mutant``)."
+            ),
+        ),
+        "condition": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description="Media / strain descriptor for this point, as the source reports it.",
+        ),
+        "perturbation": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description=(
+                "Name of the swept variable that sets this point (e.g. "
+                "``inducer_3MBA_uM``, ``carbon_source``, ``strain``)."
+            ),
+        ),
+        "level": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description="Value/label of ``perturbation`` at this point (e.g. ``300``, ``glycerol 0.2%``).",
+        ),
+        "ci_low": pa.Column(
+            float,
+            nullable=True,
+            required=False,
+            description="Lower bound of the reported interval on ``value`` (e.g. 95% CI), if reported.",
+        ),
+        "ci_high": pa.Column(
+            float,
+            nullable=True,
+            required=False,
+            description="Upper bound of the reported interval on ``value`` (e.g. 95% CI), if reported.",
+        ),
+        "strain": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description="Strain background (e.g. NCM3722), if reported.",
+        ),
+        "method": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description="How the curve was obtained (e.g. batch culture, transporter titration).",
+        ),
+        "notes": pa.Column(
+            dtype=str,
+            nullable=True,
+            required=False,
+            description="Free-text caveats: media, growth mode, extraction notes.",
+        ),
+    },
+    strict="filter",  # allow extra columns; validate the required ones
+    coerce=True,
+    description=(
+        "Curated swept-response reference (curve) for one (perturbation, "
+        "observable) slot; one row per (source, series, level), ordered along "
+        "``growth_rate_per_h``. The perturbation analogue of the basal vector "
+        "schemas, graded with the ``curve_response`` criterion."
+    ),
+)
