@@ -1,5 +1,10 @@
 # Basan et al. (2015) — aerobic acetate overflow vs growth rate (*E. coli* NCM3722)
 
+> **Role in the overflow slot:** *context / cross-reference.* The **primary**
+> overflow-yield reference is `vemuri_2006` (MG1655 chemostat with co-measured
+> glucose uptake → raw dimensionless yield). Basan contributes the qualitative
+> shape + onset and an NCM3722 (model-derived) yield cross-check.
+
 - **source_id:** `basan_2015`
 - **Citation:** Basan M, Hui S, Okano H, Zhang Z, Shen Y, Williamson JR, Hwa T.
   "Overflow metabolism in *Escherichia coli* results from efficient proteome

@@ -716,6 +716,38 @@ ResponseCurveSchema = pa.DataFrameSchema(
             required=False,
             description="Upper bound of the reported interval on ``value`` (e.g. 95% CI), if reported.",
         ),
+        # Optional CO-MEASURED fluxes at the same operating point (e.g. a chemostat
+        # row reporting glucose uptake / O2 / CO2 alongside acetate). They let a
+        # consumer compute a dimensionless yield (e.g. acetate-carbon /
+        # glucose-carbon) directly from the row, with no model conversion. Share
+        # the row's ``units`` (except ``biomass_yield``, which is g/g).
+        "glucose_uptake": pa.Column(
+            float,
+            nullable=True,
+            required=False,
+            description=(
+                "Co-measured glucose uptake rate at this point (same units as "
+                "``value``). Enables a direct carbon-yield = 2·value / (6·glucose_uptake)."
+            ),
+        ),
+        "o2_uptake": pa.Column(
+            float,
+            nullable=True,
+            required=False,
+            description="Co-measured O2 uptake rate at this point (same units as ``value``).",
+        ),
+        "co2_evolution": pa.Column(
+            float,
+            nullable=True,
+            required=False,
+            description="Co-measured CO2 evolution rate at this point (same units as ``value``).",
+        ),
+        "biomass_yield": pa.Column(
+            float,
+            nullable=True,
+            required=False,
+            description="Co-measured biomass yield Yx/s at this point (g dry weight / g substrate).",
+        ),
         "strain": pa.Column(
             dtype=str,
             nullable=True,
