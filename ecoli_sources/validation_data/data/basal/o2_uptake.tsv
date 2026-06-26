@@ -1,0 +1,4 @@
+source_id	value	units	kind	method	uncertainty	strain	notes
+long_2017	11.585	mmol/gDW/h	measured	13C-MFA aerobic batch	0.599	MG1655	mmc4 Growth Data, WT MG1655, M9 glucose; +/-SE
+varma_1994	15	mmol/gDW/h	measured	aerobic batch		W3110	Fig 1 maximum aerobic O2 uptake rate; strain W3110 (model is MG1655)
+crown_2015	15.02	mmol/gDW/h	measured	COMPLETE-MFA (14 parallel labeling expts)	0.364	MG1655	derived: O2.Ext flux 142.8 per 100 glucose (Suppl Table S4, also metabolic_fluxes crown_f67) x q_glc 10.5 (= mu/Yxs from 0.72/0.38)

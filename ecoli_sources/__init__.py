@@ -11,6 +11,12 @@ Typical use from vEcoli or other consumers::
     from ecoli_sources import BUNDLE_PATH
     # BUNDLE_PATH points at the default reference_bundle.tsv
 
+    from ecoli_sources import VALIDATION_BUNDLE_PATH
+    # VALIDATION_BUNDLE_PATH points at the validation-data manifest —
+    # experimental + theoretical reference values model OUTPUTS are graded
+    # against (distinct from the ParCa inputs above). See
+    # ``validation_data/README.md``.
+
 The package's other top-level directories (``schemas/``, ``processing/``,
 ``analysis/``) remain importable as their own top-level packages — this
 module exists only to expose the data root.
@@ -20,3 +26,8 @@ from pathlib import Path
 
 DATA_DIR: Path = Path(__file__).resolve().parent / "data"
 BUNDLE_PATH: Path = DATA_DIR / "reference_bundle.tsv"
+
+# Validation-data subsystem (graded-against reference values), kept separate
+# from the ParCa reference bundle above.
+VALIDATION_DATA_DIR: Path = Path(__file__).resolve().parent / "validation_data"
+VALIDATION_BUNDLE_PATH: Path = VALIDATION_DATA_DIR / "validation_bundle.tsv"

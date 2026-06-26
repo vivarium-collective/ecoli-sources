@@ -32,12 +32,17 @@ from schemas import (  # noqa: E402
     ReferenceBundleSchema,
     RnaseqSamplesManifestSchema,
     RnaseqTpmTableSchema,
+    ValidationBundleSchema,
 )
 
 DATA_DIR = REPO_ROOT / "ecoli_sources" / "data"
 BUNDLE = DATA_DIR / "reference_bundle.tsv"
 RNASEQ_DIR = DATA_DIR / "rnaseq_experimental"
 MANIFEST = RNASEQ_DIR / "manifest.tsv"
+
+VALIDATION_DIR = REPO_ROOT / "ecoli_sources" / "validation_data"
+VALIDATION_BUNDLE = VALIDATION_DIR / "validation_bundle.tsv"
+REFERENCES_DIR = VALIDATION_DIR / "references"
 
 
 def _fail(label: str, err: Exception) -> None:
@@ -141,11 +146,82 @@ def validate_rnaseq_manifest() -> list[str]:
     return failures
 
 
+def validate_validation_bundle() -> list[str]:
+    """Validate the validation-data bundle: manifest schema, every claim table's
+    content schema, and that each claim's ``source_id`` resolves to a
+    ``references/<source_id>/`` provenance dir. Returns list of failures.
+
+    Distinct from ``validate_bundle``: the validation manifest has NO
+    required-canonical-keys contract (slots are optional by design), so
+    ``ValidationBundleSchema`` is used instead of ``ReferenceBundleSchema``.
+    """
+    failures: list[str] = []
+
+    if not VALIDATION_BUNDLE.exists():
+        _fail(f"missing validation bundle: {VALIDATION_BUNDLE}", FileNotFoundError(str(VALIDATION_BUNDLE)))
+        return ["<validation bundle missing>"]
+
+    bundle = pd.read_csv(VALIDATION_BUNDLE, sep="\t", comment="#")
+    try:
+        ValidationBundleSchema.validate(bundle, lazy=True)
+    except Exception as e:
+        _fail(f"ValidationBundleSchema on {VALIDATION_BUNDLE}", e)
+        return ["<validation bundle schema>"]
+    print(f"OK validation_bundle ({len(bundle)} rows)")
+
+    for _, row in bundle.iterrows():
+        canonical_key = row["canonical_key"]
+        rel = row["source_path"]
+        path = (VALIDATION_DIR / rel).resolve()
+        if not path.exists():
+            _fail(f"{canonical_key}: missing source_path {path}", FileNotFoundError(str(path)))
+            failures.append(canonical_key)
+            continue
+
+        df = None
+        schema_name = row.get("schema_name")
+        if isinstance(schema_name, str) and schema_name and path.is_file():
+            schema = getattr(_schemas_module, schema_name, None)
+            if schema is None:
+                _fail(
+                    f"{canonical_key}: schema_name {schema_name!r} not exported from schemas package",
+                    KeyError(schema_name),
+                )
+                failures.append(canonical_key)
+                continue
+            try:
+                df = pd.read_csv(path, sep="\t", comment="#")
+                schema.validate(df, lazy=True)
+            except Exception as e:
+                _fail(f"{canonical_key}: {schema_name} on {rel}", e)
+                failures.append(canonical_key)
+                continue
+
+        # Provenance integrity: every claim's source_id must have a
+        # references/<source_id>/ dir (the curated number stays auditable).
+        if df is None and path.is_file():
+            df = pd.read_csv(path, sep="\t", comment="#")
+        n_claims = 0
+        if df is not None and "source_id" in df.columns:
+            for source_id in df["source_id"].dropna().unique():
+                if not (REFERENCES_DIR / str(source_id)).is_dir():
+                    _fail(
+                        f"{canonical_key}: source_id {source_id!r} has no references/{source_id}/ dir",
+                        FileNotFoundError(str(REFERENCES_DIR / str(source_id))),
+                    )
+                    failures.append(f"{canonical_key}:{source_id}")
+            n_claims = len(df)
+        print(f"OK {canonical_key} ({n_claims} claim(s): {rel})")
+
+    return failures
+
+
 def main() -> int:
     bundle_failures = validate_bundle()
     rnaseq_failures = validate_rnaseq_manifest()
+    validation_failures = validate_validation_bundle()
 
-    failures = bundle_failures + rnaseq_failures
+    failures = bundle_failures + rnaseq_failures + validation_failures
     if failures:
         print(f"\n{len(failures)} validation failure(s):", file=sys.stderr)
         for d in failures:

@@ -1,0 +1,5 @@
+source_id	value	units	kind	method	uncertainty	strain	notes
+varma_1994	10.5	mmol/gDW/h	measured	aerobic batch		W3110	Fig 2, maximum aerobic glucose uptake rate
+lacroix_2015	8.59	mmol/gDW/h	measured	aerobic batch	1.42	MG1655	Table 3 wild-type MG1655, M9 glucose; +/-95% CI
+long_2017	8.46	mmol/gDW/h	measured	13C-MFA aerobic batch	0.42	MG1655	mmc4 Growth Data, WT MG1655, M9 glucose
+kavvas_2022	10.58	mmol/gDW/h	measured	13C-MFA		MG1655	Suppl S7, WT MG1655 (absolute glucose uptake rate)
