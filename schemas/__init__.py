@@ -31,6 +31,10 @@ from .validation_claim import (
     ScalarClaimSchema,
     ValidationBundleSchema,
 )
+from .cultivation import (
+    CultivationRegistrySchema,
+    ScalarObservationSchema,
+)
 from .adjustments import (
     AdjustmentValueSchema,
     AminoAcidPathwayAdjustmentSchema,
@@ -69,6 +73,9 @@ __all__ = [
     "ProteinAbundanceSchema",
     "MetaboliteConcentrationSchema",
     "MacromoleculeCompositionSchema",
+    # cultivation-centric validation layer
+    "CultivationRegistrySchema",
+    "ScalarObservationSchema",
     # rnaseq
     "RnaseqTpmTableSchema",
     "RnaseqSamplesManifestSchema",
