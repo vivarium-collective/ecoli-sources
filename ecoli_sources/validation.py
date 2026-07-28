@@ -13,13 +13,20 @@ Two claim-table conventions are resolved transparently to one in-memory band:
   ``(condition, observable)``, e.g. ``data/basal/o2_uptake.tsv``; the measured
   band is the ``kind == measured`` rows.
 * **tidy assay table** (private ``ScalarObservationSchema``): one table holding
-  many observables across cultivations, e.g. ``fermentation.tsv``; the bundle row
-  carries a ``(cultivation_id, observable)`` filter selecting the slot's rows.
+  many observables across cultivation groups, e.g. ``fermentation.tsv``; the
+  bundle row carries a ``(cultivation_group_id, observable)`` filter selecting
+  the slot's rows.
 
 Overlay bundle paths come from ``overlay_paths=`` or the
 ``$ECOLI_SOURCES_VALIDATION_OVERLAYS`` environment variable (``;`` preferred,
 ``:`` legacy; cloud ``scheme://`` URIs preserved) — the validation analogue of
 ``$ECOLI_SOURCES_OVERLAYS``.
+
+Note on naming: ``cultivation_group_id`` here identifies the DERIVED group a
+card grades against (e.g. strain × condition, aggregating replicate reactors).
+It is distinct from a raw, LabKey-atomic per-reactor ``cultivation_id``, which
+this loader does not model — that tier lives upstream, in the assay-ingestion
+layer that produces this bundle.
 """
 from __future__ import annotations
 
@@ -99,16 +106,16 @@ def _row_band(row: dict, root: Path) -> dict:
     """Resolve one validation-bundle row to a measured band, handling both the
     per-observable-file and tidy-assay-table conventions."""
     table = _read_tsv(root / str(row["source_path"]))
-    cultivation_id = row.get("cultivation_id")
+    cultivation_group_id = row.get("cultivation_group_id")
     observable = row.get("observable")
-    is_tidy = (pd.notna(cultivation_id) if cultivation_id is not None else False) and (
+    is_tidy = (pd.notna(cultivation_group_id) if cultivation_group_id is not None else False) and (
         "observable" in table.columns)
     if is_tidy:
-        sub = table[table["cultivation_id"].astype(str) == str(cultivation_id)]
+        sub = table[table["cultivation_group_id"].astype(str) == str(cultivation_group_id)]
         if pd.notna(observable):
             sub = sub[sub["observable"].astype(str) == str(observable)]
         band = _measured_band(sub, source_col="replicate")
-        band["cultivation_id"] = str(cultivation_id)
+        band["cultivation_group_id"] = str(cultivation_group_id)
         band["observable"] = (str(observable) if pd.notna(observable) else None)
         # derived-tier temporal provenance (constant across replicates of a slot)
         for col in ("phase", "window"):
@@ -116,7 +123,7 @@ def _row_band(row: dict, root: Path) -> dict:
             band[col] = (str(vals[0]) if vals else None)
     else:
         band = _measured_band(table, source_col="source_id")
-        band["cultivation_id"] = None
+        band["cultivation_group_id"] = None
         # observable inferred from the canonical_key tail (``<condition>__<obs>``)
         key = str(row["canonical_key"])
         band["observable"] = key.split("__", 1)[1] if "__" in key else key
@@ -142,12 +149,13 @@ def load_scalar_observations(
 
     Returns ``{canonical_key: band}`` where ``band`` carries ``measured`` (the
     band), ``measured_unc``, ``theoretical_max``/``theoretical_source``,
-    ``sources``, ``units``, ``observable``, ``cultivation_id``, ``schema_name``.
-    Only scalar slots (``ScalarClaimSchema`` / ``ScalarObservationSchema``) are
-    returned; vector slots are skipped. ``canonical_key`` must be unique across
-    the union — a collision raises ``ValueError`` (mirrors the ParCa overlay
-    ``dataset_id`` contract). ``prefix`` optionally filters to keys starting with
-    it (e.g. a ``"<cultivation_id>__"`` prefix)."""
+    ``sources``, ``units``, ``observable``, ``cultivation_group_id``,
+    ``schema_name``. Only scalar slots (``ScalarClaimSchema`` /
+    ``ScalarObservationSchema``) are returned; vector slots are skipped.
+    ``canonical_key`` must be unique across the union — a collision raises
+    ``ValueError`` (mirrors the ParCa overlay ``dataset_id`` contract).
+    ``prefix`` optionally filters to keys starting with it (e.g. a
+    ``"<cultivation_group_id>__"`` prefix)."""
     if primary_bundle is None:
         primary_bundle = VALIDATION_BUNDLE_PATH
     if overlay_paths is None:
@@ -178,32 +186,33 @@ def load_scalar_observations(
     return out
 
 
-def observations_for_cultivation(
-    cultivation_id: str,
+def observations_for_cultivation_group(
+    cultivation_group_id: str,
     primary_bundle: Path | str | None = None,
     overlay_paths: list[Path | str] | None = None,
     *,
     include_primary: bool = True,
 ) -> dict[str, dict]:
-    """Scalar observations for one cultivation, keyed by ``observable``.
+    """Scalar observations for one cultivation group, keyed by ``observable``.
 
     Convenience view for a ``vs_experiment`` card: returns
-    ``{observable: band}`` for the given ``cultivation_id`` (the shape the basal
-    ``vs_literature`` render consumes, sourced from a cultivation instead of
-    literature)."""
+    ``{observable: band}`` for the given ``cultivation_group_id`` (the shape
+    the basal ``vs_literature`` render consumes, sourced from a cultivation
+    group instead of literature)."""
     allk = load_scalar_observations(
         primary_bundle, overlay_paths, include_primary=include_primary)
     return {b["observable"]: b for b in allk.values()
-            if b.get("cultivation_id") == cultivation_id and b.get("observable")}
+            if b.get("cultivation_group_id") == cultivation_group_id and b.get("observable")}
 
 
-def load_cultivations(
+def load_cultivation_groups(
     primary_registry: Path | str | None = None,
     overlay_registries: list[Path | str] | None = None,
 ) -> dict[str, dict]:
-    """Union the cultivation registry across primary + overlays, keyed by
-    ``cultivation_id`` (unique across the union or ``ValueError``). Registry
-    paths default to ``cultivations.tsv`` beside each validation bundle."""
+    """Union the cultivation-group registry across primary + overlays, keyed by
+    ``cultivation_group_id`` (unique across the union or ``ValueError``).
+    Registry paths default to ``cultivations.tsv`` beside each validation
+    bundle."""
     registries: list[Path] = []
     if primary_registry is not None:
         registries.append(Path(primary_registry))
@@ -217,8 +226,8 @@ def load_cultivations(
     out: dict[str, dict] = {}
     for reg in registries:
         for _, r in _read_tsv(reg).iterrows():
-            cid = str(r["cultivation_id"])
+            cid = str(r["cultivation_group_id"])
             if cid in out:
-                raise ValueError(f"duplicate cultivation_id '{cid}' across registries ({reg})")
+                raise ValueError(f"duplicate cultivation_group_id '{cid}' across registries ({reg})")
             out[cid] = {k: (None if pd.isna(v) else v) for k, v in r.to_dict().items()}
     return out

@@ -4,26 +4,29 @@ Pandera schemas for the cultivation-centric validation layer.
 These extend the validation-data subsystem (``schemas/validation_claim.py``)
 toward a cultivation-keyed, multi-performer organization:
 
-* ``CultivationRegistrySchema`` — the **cultivation registry**
-  (``validation_data/cultivations.tsv``). One row per cultivation = a specific
-  strain × medium × run, carrying the who/how/when/why. A SIM is a cultivation
-  too (``mode = SIM``), so the registry is the EXP↔SIM join. Assay tables
-  reference it by ``cultivation_id``.
+* ``CultivationRegistrySchema`` — the **cultivation-group registry**
+  (``validation_data/cultivations.tsv``). One row per cultivation GROUP = a
+  specific strain × medium × run, aggregating replicate reactors, carrying the
+  who/how/when/why. A SIM is a cultivation group too (``mode = SIM``), so the
+  registry is the EXP↔SIM join. Assay tables reference it by
+  ``cultivation_group_id``. (Distinct from a raw, LabKey-atomic per-reactor
+  ``cultivation_id`` — that finer tier is not modeled here.)
 
 * ``ScalarObservationSchema`` — a **tidy** scalar-observation assay table
   (e.g. ``validation_data/fermentation.tsv``). One row per
-  ``(cultivation_id, observable, replicate)``. The cultivation-keyed,
+  ``(cultivation_group_id, observable, replicate)``. The cultivation-keyed,
   tidy-long generalization of ``ScalarClaimSchema`` (which is per-observable
-  file, single implicit cultivation): many observables and cultivations live in
-  one assay table, joined to the registry by ``cultivation_id`` and addressed by
-  ``(cultivation_id, observable)``. This tidy, long-form layout is a common
-  assay-export shape, so one representation serves grading and data delivery.
+  file, single implicit cultivation group): many observables and cultivation
+  groups live in one assay table, joined to the registry by
+  ``cultivation_group_id`` and addressed by ``(cultivation_group_id,
+  observable)``. This tidy, long-form layout is a common assay-export shape, so
+  one representation serves grading and data delivery.
 
 Both are read by ``ecoli_sources.validation`` (the overlay-union loader), which
 unions a primary validation bundle with any overlay bundles on
 ``canonical_key`` and resolves each scalar key to its measured band — from a
 per-observable ``ScalarClaimSchema`` file OR a tidy ``ScalarObservationSchema``
-table filtered to ``(cultivation_id, observable)``.
+table filtered to ``(cultivation_group_id, observable)``.
 """
 
 import pandera.pandas as pa
@@ -45,15 +48,17 @@ _MODES = ["EXP", "SIM", "literature"]
 CultivationRegistrySchema = pa.DataFrameSchema(
     name="cultivation_registry",
     columns={
-        "cultivation_id": pa.Column(
+        "cultivation_group_id": pa.Column(
             dtype=str,
             unique=True,
             nullable=False,
             description=(
                 "Primary key (snake_case). Stable token identifying one "
-                "cultivation; assay tables and validation-bundle rows reference "
-                "it. Convention: ``<campaign>_<performer>_<strain>_<medium>``; "
-                "full identity lives in the columns."
+                "cultivation GROUP (a derived aggregate over replicate reactors, "
+                "not the raw LabKey-atomic per-reactor cultivation); assay tables "
+                "and validation-bundle rows reference it. Convention: "
+                "``<campaign>_<performer>_<strain>_<medium>``; full identity "
+                "lives in the columns."
             ),
         ),
         "mode": pa.Column(
@@ -110,9 +115,10 @@ CultivationRegistrySchema = pa.DataFrameSchema(
     strict="filter",  # allow extra columns; validate the required ones
     coerce=True,
     description=(
-        "Cultivation registry: one row per cultivation (strain × medium × run), "
-        "carrying provenance. A SIM is a cultivation (mode=SIM), so this is the "
-        "EXP↔SIM join. Assay tables reference rows by cultivation_id."
+        "Cultivation-group registry: one row per cultivation group (strain × "
+        "medium × run, aggregating replicate reactors), carrying provenance. A "
+        "SIM is a cultivation group (mode=SIM), so this is the EXP↔SIM join. "
+        "Assay tables reference rows by cultivation_group_id."
     ),
 )
 
@@ -124,19 +130,19 @@ CultivationRegistrySchema = pa.DataFrameSchema(
 ScalarObservationSchema = pa.DataFrameSchema(
     name="scalar_observation",
     columns={
-        "cultivation_id": pa.Column(
+        "cultivation_group_id": pa.Column(
             dtype=str,
             nullable=False,
-            description="FK to the cultivation registry (cultivations.tsv).",
+            description="FK to the cultivation-group registry (cultivations.tsv).",
         ),
         "observable": pa.Column(
             dtype=str,
             nullable=False,
             description=(
                 "The measured quantity (e.g. growth_rate, glucose_uptake, "
-                "acetate_secretion). With cultivation_id, addresses a validation "
-                "slot: the bundle's (cultivation_id, observable) filter selects "
-                "the rows for one canonical_key."
+                "acetate_secretion). With cultivation_group_id, addresses a "
+                "validation slot: the bundle's (cultivation_group_id, observable) "
+                "filter selects the rows for one canonical_key."
             ),
         ),
         "value": pa.Column(
@@ -194,7 +200,7 @@ ScalarObservationSchema = pa.DataFrameSchema(
     strict="filter",  # allow extra columns; validate the required ones
     coerce=True,
     description=(
-        "Tidy scalar-observation assay table; one row per (cultivation_id, "
+        "Tidy scalar-observation assay table; one row per (cultivation_group_id, "
         "observable, replicate). The cultivation-keyed, tidy-long generalization "
         "of ScalarClaimSchema, a common tidy assay-export layout. This is the "
         "DERIVED/summary tier (KPIs computed over an interval, like the literature "
