@@ -14,6 +14,10 @@ Organization:
 * ``validation_claim`` — the validation-data subsystem: a separate manifest
   (no required-keys contract) + scalar reference-claim tables that model
   *outputs* are graded against. See ``ecoli_sources/validation_data/README.md``.
+* ``vector_observation`` — cultivation-keyed tidy tables whose observable is a
+  VECTOR (a per-gene proteome, a per-gene transcriptome): the vector analogue
+  of ``ScalarObservationSchema``. Measurement-only; resolved by
+  ``ecoli_sources.validation.load_vector_observations``.
 * ``rnaseq`` — per-condition TPM tables + samples manifest (Chris).
 * ``adjustments`` — parca-time manual overrides (flat/adjustments/*).
 * ``parameters`` — growth-rate-dependent physiological parameters.
@@ -36,6 +40,7 @@ from .cultivation import (
     CultivationRegistrySchema,
     ScalarObservationSchema,
 )
+from .vector_observation import VectorObservationSchema
 from .adjustments import (
     AdjustmentValueSchema,
     AminoAcidPathwayAdjustmentSchema,
@@ -78,6 +83,7 @@ __all__ = [
     # cultivation-centric validation layer
     "CultivationRegistrySchema",
     "ScalarObservationSchema",
+    "VectorObservationSchema",
     # rnaseq
     "RnaseqTpmTableSchema",
     "RnaseqSamplesManifestSchema",

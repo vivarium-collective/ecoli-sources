@@ -37,9 +37,20 @@ import pandas as pd
 
 from ecoli_sources import VALIDATION_BUNDLE_PATH
 
-# Scalar claim-table schemas this loader resolves to a measured band. Vector
-# schemas (ReactionFlux, ProteinAbundance, …) are handled by their own readers.
+# Scalar claim-table schemas this loader resolves to a measured band.
 _SCALAR_SCHEMAS = {"ScalarClaimSchema", "ScalarObservationSchema"}
+
+# Vector claim/observation tables. Resolved to a located slot (path + filter)
+# rather than a band: a scalar slot is a handful of numbers a consumer grades
+# directly, a vector slot is thousands of rows, so one function returning either
+# shape would be convenient to call and unpleasant to consume.
+_VECTOR_SCHEMAS = {
+    "VectorObservationSchema",       # cultivation-keyed, tidy (this subsystem)
+    "ReactionFluxSchema",            # per-source vector claims
+    "ProteinAbundanceSchema",
+    "MetaboliteConcentrationSchema",
+    "MacromoleculeCompositionSchema",
+}
 
 VALIDATION_OVERLAYS_ENV = "ECOLI_SOURCES_VALIDATION_OVERLAYS"
 
@@ -138,6 +149,30 @@ def _row_band(row: dict, root: Path) -> dict:
 # Union loader
 # ---------------------------------------------------------------------------
 
+def _union_bundle_rows(bundles: list[Path]) -> dict[str, tuple[dict, Path]]:
+    """Union every row of every bundle on ``canonical_key``.
+
+    Returns ``{canonical_key: (row, bundle_root)}``. Uniqueness is enforced
+    across the WHOLE union — scalar and vector slots share one key namespace, so
+    a vector row cannot silently shadow a scalar one (they address the same
+    thing: "this observable, for this condition"). Filtering by schema happens
+    after the union, so a collision is caught even between rows that no single
+    caller would have looked at together."""
+    out: dict[str, tuple[dict, Path]] = {}
+    for bundle_path in bundles:
+        manifest = _read_tsv(bundle_path)
+        root = bundle_path.parent
+        for _, r in manifest.iterrows():
+            row = r.to_dict()
+            key = str(row["canonical_key"])
+            if key in out:
+                raise ValueError(
+                    f"duplicate validation canonical_key '{key}' across the "
+                    f"primary+overlay union (second seen in {bundle_path})")
+            out[key] = (row, root)
+    return out
+
+
 def load_scalar_observations(
     primary_bundle: Path | str | None = None,
     overlay_paths: list[Path | str] | None = None,
@@ -167,23 +202,101 @@ def load_scalar_observations(
     bundles.extend(Path(p) for p in overlay_paths)
 
     out: dict[str, dict] = {}
-    for bundle_path in bundles:
-        manifest = _read_tsv(bundle_path)
-        root = bundle_path.parent
-        for _, r in manifest.iterrows():
-            row = r.to_dict()
-            schema = str(row.get("schema_name") or "")
-            if schema not in _SCALAR_SCHEMAS:
-                continue
-            key = str(row["canonical_key"])
-            if prefix is not None and not key.startswith(prefix):
-                continue
-            if key in out:
-                raise ValueError(
-                    f"duplicate validation canonical_key '{key}' across the "
-                    f"primary+overlay union (second seen in {bundle_path})")
-            out[key] = _row_band(row, root)
+    for key, (row, root) in _union_bundle_rows(bundles).items():
+        if str(row.get("schema_name") or "") not in _SCALAR_SCHEMAS:
+            continue
+        if prefix is not None and not key.startswith(prefix):
+            continue
+        out[key] = _row_band(row, root)
     return out
+
+
+def load_vector_observations(
+    primary_bundle: Path | str | None = None,
+    overlay_paths: list[Path | str] | None = None,
+    *,
+    include_primary: bool = True,
+    prefix: str | None = None,
+) -> dict[str, dict]:
+    """Locate vector validation slots across the primary + overlay bundles.
+
+    Returns ``{canonical_key: slot}``, where a slot carries ``path`` (the
+    resolved table), ``schema_name``, and the filter that selects this slot's
+    rows within it (``cultivation_group_id``, ``observable``, ``units``), plus
+    ``phase``/``window``/``description``.
+
+    **Located, not read.** Unlike the scalar loader — which resolves a slot all
+    the way to a measured band — this stops at the file. A vector table can hold
+    thousands of rows, a bundle can hold many slots, and a consumer typically
+    wants one; materializing them all to answer "what exists?" is the wrong
+    trade. Call :func:`read_vector_observations` on the slot you want.
+
+    Covers both vector conventions: the cultivation-keyed tidy table
+    (``VectorObservationSchema``) and the per-source vector claim tables
+    (``ReactionFluxSchema``, ``ProteinAbundanceSchema``, …)."""
+    if primary_bundle is None:
+        primary_bundle = VALIDATION_BUNDLE_PATH
+    if overlay_paths is None:
+        overlay_paths = validation_overlay_paths()
+
+    bundles: list[Path] = []
+    if include_primary:
+        bundles.append(Path(primary_bundle))
+    bundles.extend(Path(p) for p in overlay_paths)
+
+    out: dict[str, dict] = {}
+    for key, (row, root) in _union_bundle_rows(bundles).items():
+        schema = str(row.get("schema_name") or "")
+        if schema not in _VECTOR_SCHEMAS:
+            continue
+        if prefix is not None and not key.startswith(prefix):
+            continue
+        out[key] = {
+            "canonical_key": key,
+            "schema_name": schema,
+            "path": root / str(row["source_path"]),
+            "cultivation_group_id": _opt(row, "cultivation_group_id", "cultivation_id"),
+            "observable": _opt(row, "observable"),
+            "units": _opt(row, "units"),
+            "phase": _opt(row, "phase"),
+            "window": _opt(row, "window"),
+            "description": _opt(row, "description"),
+        }
+    return out
+
+
+def _opt(row: dict, *names: str) -> str | None:
+    """First present, non-null value among ``names`` in a bundle row.
+
+    Accepts several spellings so a bundle stays readable across the
+    ``cultivation_id`` → ``cultivation_group_id`` rename — the group key is the
+    one a vector slot filters on."""
+    for name in names:
+        if name in row:
+            val = row[name]
+            if val is not None and pd.notna(val):
+                return str(val)
+    return None
+
+
+def read_vector_observations(slot: dict, *, validate: bool = True) -> pd.DataFrame:
+    """Read one located vector slot, filtered to its rows.
+
+    Applies whichever of ``cultivation_group_id`` / ``observable`` / ``units``
+    the slot pins AND the table carries, so the same call works for a tidy
+    cultivation-keyed table and for a per-source claim table that pins none of
+    them. Validates against ``VectorObservationSchema`` when that is the slot's
+    schema (``validate=False`` to skip — e.g. at render time, where a payload
+    defect should be surfaced by CI rather than break a report)."""
+    table = _read_tsv(Path(slot["path"]))
+    for col in ("cultivation_group_id", "observable", "units"):
+        want = slot.get(col)
+        if want is not None and col in table.columns:
+            table = table[table[col].astype(str) == str(want)]
+    if validate and slot.get("schema_name") == "VectorObservationSchema":
+        from schemas.vector_observation import VectorObservationSchema
+        table = VectorObservationSchema.validate(table, lazy=True)
+    return table.reset_index(drop=True)
 
 
 def observations_for_cultivation_group(

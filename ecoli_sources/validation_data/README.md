@@ -70,6 +70,46 @@ contributes many addressable rows keyed by a within-vector id. Today:
   abundance (copies/cell) with an optional replicate `cv`. The proteome analogue
   of the flux vector (typically graded as a log-log R² over shared genes).
 
+### Cultivation-keyed vector observations
+
+The two vector schemas above are *per-source* references: one row per
+`(source, entity)`, the vector analogue of `ScalarClaimSchema`.
+`VectorObservationSchema` is the cultivation-keyed analogue — the same move
+`ScalarObservationSchema` makes for scalars. One row per
+`(cultivation_group_id, observable, entity_id, units)`, holding a measurement
+this program produced rather than one taken from the literature.
+
+Two things distinguish it from the scalar assay table:
+
+- **It ships pre-aggregated.** Where a scalar table keeps one row per replicate
+  and lets the consumer aggregate, a vector observation summarizes an interval
+  named by `phase`/`window`, and carries its own dispersion (`sd_log10`) and
+  counts (`n`, `n_pos`, `n_total`). Choosing which timepoints represent a
+  condition can depend on knowledge absent from the data, so it is a curation
+  decision made upstream, not a default a consumer should re-take.
+- **It records detection.** A `detection` column separates a genuine measured
+  zero from "looked for, absent" — a distinction a bare number cannot carry, and
+  one that vanishes if absence is encoded as a missing row or as a null the
+  reader coerces.
+
+It is **measurement-only**: no model-side value, no simulation provenance.
+Pairing a measurement with a model — resolving the shared entity set,
+renormalizing, computing concordance — belongs to whatever grades the
+comparison. Baking a model vector in alongside would make the measurement's own
+content model-dependent, since the entity set becomes an intersection with that
+model's id-space and any normalization over the intersection moves when model
+coverage moves.
+
+Vector slots are located, not read, by the loader — a bundle can hold many and
+each can hold thousands of rows:
+
+```python
+from ecoli_sources.validation import load_vector_observations, read_vector_observations
+
+slots = load_vector_observations()          # {canonical_key: slot}
+frame = read_vector_observations(slots["basal__proteome"])
+```
+
 ## Consuming it
 
 ```python
