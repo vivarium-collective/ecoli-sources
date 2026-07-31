@@ -57,51 +57,51 @@ def build_fixture(root: Path) -> dict:
          "kind": "theoretical_max", "uncertainty": None},
     ]), primary / "data/basal/glucose_uptake.tsv")
     _write_tsv(pd.DataFrame([
-        {"cultivation_id": "lit_basal", "mode": "literature", "notes": "aggregate"},
+        {"cultivation_group_id": "lit_basal", "mode": "literature", "notes": "aggregate"},
     ]), primary / "cultivations.tsv")
 
     # --- overlay: tidy ScalarObservationSchema (the cultivation-keyed shape). One assay
     #     table holds two observables across two cultivations; bundle rows select
-    #     slots by (cultivation_id, observable).
+    #     slots by (cultivation_group_id, observable).
     _write_tsv(pd.DataFrame([
         {"canonical_key": "c1_labx_wt_m9__glucose_uptake",
          "source_path": "fermentation.tsv", "description": "cultivation glc uptake",
          "schema_name": "ScalarObservationSchema",
-         "cultivation_id": "c1_labx_wt_m9", "observable": "glucose_uptake"},
+         "cultivation_group_id": "c1_labx_wt_m9", "observable": "glucose_uptake"},
         {"canonical_key": "c1_labx_wt_m9__acetate_secretion",
          "source_path": "fermentation.tsv", "description": "cultivation acetate",
          "schema_name": "ScalarObservationSchema",
-         "cultivation_id": "c1_labx_wt_m9", "observable": "acetate_secretion"},
+         "cultivation_group_id": "c1_labx_wt_m9", "observable": "acetate_secretion"},
     ]), overlay / "validation_bundle.tsv")
     _write_tsv(pd.DataFrame([
         # c1_labx_wt_m9 × glucose_uptake × 3 reactors
-        {"cultivation_id": "c1_labx_wt_m9", "observable": "glucose_uptake",
+        {"cultivation_group_id": "c1_labx_wt_m9", "observable": "glucose_uptake",
          "value": 9.1, "units": "mmol/gDW/h", "kind": "measured", "replicate": "r1",
          "phase": "exponential_batch", "window": "3-4h"},
-        {"cultivation_id": "c1_labx_wt_m9", "observable": "glucose_uptake",
+        {"cultivation_group_id": "c1_labx_wt_m9", "observable": "glucose_uptake",
          "value": 9.3, "units": "mmol/gDW/h", "kind": "measured", "replicate": "r2",
          "phase": "exponential_batch", "window": "3-4h"},
-        {"cultivation_id": "c1_labx_wt_m9", "observable": "glucose_uptake",
+        {"cultivation_group_id": "c1_labx_wt_m9", "observable": "glucose_uptake",
          "value": 8.9, "units": "mmol/gDW/h", "kind": "measured", "replicate": "r3",
          "phase": "exponential_batch", "window": "3-4h"},
         # c1_labx_wt_m9 × acetate_secretion × 3 reactors
-        {"cultivation_id": "c1_labx_wt_m9", "observable": "acetate_secretion",
+        {"cultivation_group_id": "c1_labx_wt_m9", "observable": "acetate_secretion",
          "value": 1.2, "units": "mmol/gDW/h", "kind": "measured", "replicate": "r1",
          "phase": "exponential_batch", "window": "3-4h"},
-        {"cultivation_id": "c1_labx_wt_m9", "observable": "acetate_secretion",
+        {"cultivation_group_id": "c1_labx_wt_m9", "observable": "acetate_secretion",
          "value": 1.4, "units": "mmol/gDW/h", "kind": "measured", "replicate": "r2",
          "phase": "exponential_batch", "window": "3-4h"},
-        {"cultivation_id": "c1_labx_wt_m9", "observable": "acetate_secretion",
+        {"cultivation_group_id": "c1_labx_wt_m9", "observable": "acetate_secretion",
          "value": 1.0, "units": "mmol/gDW/h", "kind": "measured", "replicate": "r3",
          "phase": "exponential_batch", "window": "3-4h"},
         # a DIFFERENT cultivation in the same table — must not leak into the above
-        {"cultivation_id": "c1_labx_vio_m9", "observable": "glucose_uptake",
+        {"cultivation_group_id": "c1_labx_vio_m9", "observable": "glucose_uptake",
          "value": 7.0, "units": "mmol/gDW/h", "kind": "measured", "replicate": "r1",
          "phase": "exponential_batch", "window": "3-4h"},
     ]), overlay / "fermentation.tsv")
     _write_tsv(pd.DataFrame([
-        {"cultivation_id": "c1_labx_wt_m9", "mode": "EXP", "performer": "LabX"},
-        {"cultivation_id": "v2ecoli_baseline", "mode": "SIM", "performer": "SimLab"},
+        {"cultivation_group_id": "c1_labx_wt_m9", "mode": "EXP", "performer": "LabX"},
+        {"cultivation_group_id": "v2ecoli_baseline", "mode": "SIM", "performer": "SimLab"},
     ]), overlay / "cultivations.tsv")
 
     # --- a second overlay that duplicates a primary key (collision fixture)
@@ -138,7 +138,7 @@ def test_per_observable_band(fx):
     assert abs(b["theoretical_max"] - 11.0) < APPROX
     assert b["theoretical_source"] == "fba_thermo"
     assert b["observable"] == "glucose_uptake", b["observable"]  # inferred from key tail
-    assert b["cultivation_id"] is None
+    assert b["cultivation_group_id"] is None
     assert b["phase"] is None and b["window"] is None  # per-observable carries no temporal tier
     assert b["units"] == "mmol/gDW/h"
     assert set(b["sources"]) == {"long_2017", "lacroix_2015"}
@@ -148,18 +148,18 @@ def test_tidy_band(fx):
     b = V.load_scalar_observations(fx["primary_bundle"], [fx["overlay_bundle"]])[
         "c1_labx_wt_m9__glucose_uptake"]
     assert sorted(b["measured"]) == [8.9, 9.1, 9.3], b["measured"]  # 3 reactors, not the vio row
-    assert b["cultivation_id"] == "c1_labx_wt_m9"
+    assert b["cultivation_group_id"] == "c1_labx_wt_m9"
     assert b["observable"] == "glucose_uptake"
     assert b["phase"] == "exponential_batch"
     assert b["window"] == "3-4h"
     assert set(b["sources"]) == {"r1", "r2", "r3"}  # source_col = replicate
 
 
-def test_observations_for_cultivation(fx):
-    obs = V.observations_for_cultivation(
+def test_observations_for_cultivation_group(fx):
+    obs = V.observations_for_cultivation_group(
         "c1_labx_wt_m9", fx["primary_bundle"], [fx["overlay_bundle"]])
     assert set(obs) == {"glucose_uptake", "acetate_secretion"}, sorted(obs)
-    assert obs["acetate_secretion"]["cultivation_id"] == "c1_labx_wt_m9"
+    assert obs["acetate_secretion"]["cultivation_group_id"] == "c1_labx_wt_m9"
     assert sorted(obs["acetate_secretion"]["measured"]) == [1.0, 1.2, 1.4]
 
 
@@ -181,20 +181,20 @@ def test_canonical_key_collision(fx):
     raise AssertionError("expected ValueError on duplicate canonical_key, none raised")
 
 
-def test_cultivations_union(fx):
-    c = V.load_cultivations(fx["primary_reg"], [fx["overlay_reg"]])
+def test_cultivation_groups_union(fx):
+    c = V.load_cultivation_groups(fx["primary_reg"], [fx["overlay_reg"]])
     assert set(c) >= {"lit_basal", "c1_labx_wt_m9", "v2ecoli_baseline"}, sorted(c)
     assert c["c1_labx_wt_m9"]["mode"] == "EXP"
-    assert c["v2ecoli_baseline"]["mode"] == "SIM"  # a SIM is a cultivation too
+    assert c["v2ecoli_baseline"]["mode"] == "SIM"  # a SIM is a cultivation group too
 
 
-def test_cultivation_id_collision(fx):
+def test_cultivation_group_id_collision(fx):
     try:
-        V.load_cultivations(fx["primary_reg"], [fx["primary_reg"]])  # same reg twice
+        V.load_cultivation_groups(fx["primary_reg"], [fx["primary_reg"]])  # same reg twice
     except ValueError as e:
-        assert "duplicate cultivation_id" in str(e), str(e)
+        assert "duplicate cultivation_group_id" in str(e), str(e)
         return
-    raise AssertionError("expected ValueError on duplicate cultivation_id, none raised")
+    raise AssertionError("expected ValueError on duplicate cultivation_group_id, none raised")
 
 
 def test_overlay_separator_parsing(fx):
@@ -214,11 +214,11 @@ CHECKS = [
     test_union_both_conventions,
     test_per_observable_band,
     test_tidy_band,
-    test_observations_for_cultivation,
+    test_observations_for_cultivation_group,
     test_prefix_filter,
     test_canonical_key_collision,
-    test_cultivations_union,
-    test_cultivation_id_collision,
+    test_cultivation_groups_union,
+    test_cultivation_group_id_collision,
     test_overlay_separator_parsing,
 ]
 
