@@ -6,21 +6,18 @@ dir) rather than the committed data, so it checks *loader logic* — the
 ``canonical_key`` union, both claim-table conventions, the uniqueness contract,
 the cultivation views, and overlay-path parsing — independent of any real payload.
 
-Follows the repo's script idiom (``scripts/validate_all.py``): plain asserts,
-prints ``OK``/``FAIL`` per check, exits non-zero on the first failure. No pytest
-dependency (functions are ``test_*`` so a future pytest run would also discover
-them). Runnable locally:
+Run with::
 
-    uv run python scripts/test_validation_loader.py
+    uv run pytest scripts/test_validation_loader.py
 """
 from __future__ import annotations
 
 import os
 import sys
-import tempfile
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
@@ -28,6 +25,12 @@ sys.path.insert(0, str(REPO_ROOT))
 from ecoli_sources import validation as V  # noqa: E402
 
 APPROX = 1e-9
+
+
+@pytest.fixture(scope="module")
+def fx(tmp_path_factory) -> dict:
+    """Synthetic primary+overlay payload, built once for the module."""
+    return build_fixture(tmp_path_factory.mktemp("validation_loader"))
 
 
 def _write_tsv(df: pd.DataFrame, path: Path) -> None:
@@ -210,39 +213,3 @@ def test_overlay_separator_parsing(fx):
         del os.environ[V.VALIDATION_OVERLAYS_ENV]
 
 
-CHECKS = [
-    test_union_both_conventions,
-    test_per_observable_band,
-    test_tidy_band,
-    test_observations_for_cultivation_group,
-    test_prefix_filter,
-    test_canonical_key_collision,
-    test_cultivation_groups_union,
-    test_cultivation_group_id_collision,
-    test_overlay_separator_parsing,
-]
-
-
-def main() -> int:
-    with tempfile.TemporaryDirectory() as td:
-        fx = build_fixture(Path(td))
-        failures = []
-        for check in CHECKS:
-            try:
-                check(fx)
-                print(f"OK {check.__name__}")
-            except Exception as e:  # noqa: BLE001 — report and continue
-                print(f"FAIL {check.__name__}", file=sys.stderr)
-                print(f"  {type(e).__name__}: {e}", file=sys.stderr)
-                failures.append(check.__name__)
-    if failures:
-        print(f"\n{len(failures)} loader check(s) failed:", file=sys.stderr)
-        for f in failures:
-            print(f"  - {f}", file=sys.stderr)
-        return 1
-    print(f"\nAll {len(CHECKS)} loader checks passed.")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

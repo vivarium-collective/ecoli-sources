@@ -7,26 +7,35 @@ against synthetic fixtures built in a temp dir. The payloads that motivate this
 tier are experimental data living in private overlays, so the mechanism has to
 be testable without any of them.
 
-Follows the repo's script idiom (``scripts/test_validation_loader.py``): plain
-asserts, prints ``OK``/``FAIL`` per check, exits non-zero on the first failure.
-No pytest dependency (functions are ``test_*`` so a future pytest run would also
-discover them). Runnable locally:
+Run with::
 
-    uv run python scripts/test_vector_observations.py
+    uv run pytest scripts/test_vector_observations.py
 """
 from __future__ import annotations
 
 import sys
-import tempfile
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 from ecoli_sources import validation as V  # noqa: E402
 from schemas import VectorObservationSchema  # noqa: E402
+
+
+@pytest.fixture
+def root(tmp_path) -> Path:
+    """Fresh temp root; the collision check builds its own payload under it."""
+    return tmp_path
+
+
+@pytest.fixture
+def bundle(root: Path) -> Path:
+    """Path to a synthetic validation bundle manifest."""
+    return build_fixture(root)
 
 
 def _row(**over) -> dict:
@@ -205,26 +214,3 @@ def test_key_collisions_are_caught_across_the_schema_split(root: Path) -> None:
     print("OK   canonical_key collisions are caught across the scalar/vector split")
 
 
-def main() -> int:
-    with tempfile.TemporaryDirectory() as tmp:
-        root = Path(tmp)
-        bundle = build_fixture(root)
-        checks = [
-            test_schema_accepts_the_valid_shapes,
-            test_schema_rejects_incoherent_rows,
-            lambda: test_loader_locates_vector_slots(bundle),
-            lambda: test_reading_a_slot_applies_its_filter(bundle),
-            lambda: test_key_collisions_are_caught_across_the_schema_split(root),
-        ]
-        for check in checks:
-            try:
-                check()
-            except AssertionError as exc:
-                print(f"FAIL {exc}", file=sys.stderr)
-                return 1
-        print(f"\n{len(checks)}/{len(checks)} checks passed")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

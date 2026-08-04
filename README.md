@@ -56,11 +56,23 @@ analysis/                          Cross-dataset analysis utilities
 
 scripts/                           Repo-level entry points
   validate_all.py                  Validate manifest + every referenced TPM file
+  test_*.py                        pytest suites for the loaders and schemas
 
 datapackage.json                   Frictionless Data package descriptor
 CITATION.cff                       GitHub-native citation metadata
-.github/workflows/validate.yml     CI: runs schema validation on every PR
+.github/workflows/validate.yml     CI: schema validation + tests on every PR
 ```
+
+## Running the tests
+
+```bash
+uv sync --extra dev
+uv run pytest
+```
+
+Tests live in `scripts/` alongside the entry points they exercise rather than in
+a separate tree, since several of those entry points are themselves runnable
+scripts. Both `pytest` and `validate_all.py` run in CI on every PR.
 
 ## Dataset format
 
