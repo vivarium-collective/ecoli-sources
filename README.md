@@ -186,7 +186,7 @@ Provenance goes in the `genotype.json` sidecar written next to each manifest,
 never in extra manifest columns: `ReferenceBundleSchema` is `strict="filter"` and
 **drops** unknown columns rather than rejecting them.
 
-Checks: `uv run python scripts/test_genotypes.py`.
+Checks: `uv run pytest scripts/test_genotypes.py`.
 
 ## Sensitivity campaigns
 
