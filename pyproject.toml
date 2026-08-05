@@ -14,9 +14,17 @@ dependencies = [
     "jupyter>=1.0",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
 [build-system]
 requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+# Tests live alongside the repo-level entry points they exercise, rather than in
+# a top-level tests/ tree, because several of them ARE runnable scripts.
+testpaths = ["scripts"]
 
 [tool.setuptools.packages.find]
 include = ["ecoli_sources*", "schemas*", "analysis*", "processing*"]
