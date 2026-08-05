@@ -48,6 +48,7 @@ schemas/                           Pandera validation schemas
 processing/                        Dataset construction and transformation
   post_processing.py               Dataset variant generators (gene exclusion, etc.)
   perturbations.py                 Perturbation operator library + campaign driver
+  genotypes.py                     Genotype generators + variant-bundle composition
 
 analysis/                          Cross-dataset analysis utilities
   compare_datasets.py
@@ -147,6 +148,45 @@ manifest. Variants live under `ecoli_sources/data/rnaseq_experimental/perturbati
 `runscripts/run_sensitivity_campaign.py`. Pull the canonical `manifest.tsv`
 from git before running any campaign, since the campaign meta-runner rewrites
 it with generated rows.
+
+## Genotype variants
+
+`processing/genotypes.py` builds **variant bundles**: a perturbed genotype is a
+complete manifest, not a flag passed to the consumer, so the manifest a ParCa
+build reads *is* the genome and dataset it was built from.
+
+```python
+from processing.genotypes import knockdown, compose_variant_bundle, genotype_id
+
+kd = knockdown(["EG10001"], factor=0.1, out_dir="out/kd/files")
+manifest = compose_variant_bundle([kd], "out/kd", name="EG10001-kd10x")
+genotype_id(manifest)   # -> the content hash identifying this genotype
+```
+
+Three properties worth knowing before extending it:
+
+- **Generators return rows, not manifests.** A generator writes its variant files
+  and reports which canonical keys they replace; `compose_variant_bundle`
+  assembles the complete manifest. That is what lets several perturbations
+  combine without any diff-two-manifests logic — and the consumer still receives
+  one complete manifest, per the build-time/runtime boundary in
+  [BUNDLES.md](BUNDLES.md). Two generators claiming the same key is an error, not
+  last-writer-wins.
+- **Identity is a content hash**, over `(canonical_key, sha256(file))` for every
+  row — not the manifest's bytes. A manifest is a list of pointers, so editing a
+  variant file in place would leave a bytes-hash unchanged and silently reuse a
+  stale build.
+- **Materialization is cache-like.** The durable artifact is the genotype's spec
+  and id; the files are a reproducible derivative. Write them outside the package
+  (as the gitignored `rnaseq_experimental/perturbations/` tree already does) —
+  a knockout writes ~5.5 MB, so a thousand-genotype campaign is ~5.5 GB of data
+  fully determined by `(base id, generator, params)`.
+
+Provenance goes in the `genotype.json` sidecar written next to each manifest,
+never in extra manifest columns: `ReferenceBundleSchema` is `strict="filter"` and
+**drops** unknown columns rather than rejecting them.
+
+Checks: `uv run python scripts/test_genotypes.py`.
 
 ## Sensitivity campaigns
 
