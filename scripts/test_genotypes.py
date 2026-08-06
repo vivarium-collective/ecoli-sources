@@ -7,25 +7,22 @@ variant manifest whose unoverridden paths no longer resolve, an identity that
 misses an edited input, provenance that validation quietly discards, and two
 generators both claiming one canonical key.
 
-Follows the repo's script idiom (``scripts/validate_all.py``,
-``scripts/test_validation_loader.py``): plain asserts, prints ``OK``/``FAIL``
-per check, exits non-zero if any failed. No pytest dependency (functions are
-``test_*`` so a future pytest run would also discover them). Runnable locally:
-
-    uv run python scripts/test_genotypes.py
-
 Writes only into a temp dir — a generator that wrote into the committed data
 package would itself be a bug, and one check asserts it does not.
+
+Run with::
+
+    uv run pytest scripts/test_genotypes.py
 """
 
 from __future__ import annotations
 
 import json
 import sys
-import tempfile
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -60,14 +57,10 @@ class Fixture:
         return p
 
 
-def _expect(exc_type, match: str, fn, *args, **kwargs) -> None:
-    """Assert ``fn`` raises ``exc_type`` whose message contains ``match``."""
-    try:
-        fn(*args, **kwargs)
-    except exc_type as e:
-        assert match in str(e), f"expected {match!r} in error, got: {e}"
-        return
-    raise AssertionError(f"expected {exc_type.__name__} containing {match!r}, none raised")
+@pytest.fixture(scope="module")
+def fx(tmp_path_factory) -> Fixture:
+    """The base bundle plus a scratch root, built once for the module."""
+    return Fixture(tmp_path_factory.mktemp("genotypes"))
 
 
 # ---------------------------------------------------------------------------
@@ -111,7 +104,8 @@ def test_knockdown_records_its_provenance(fx: Fixture) -> None:
 def test_knockdown_rejects_genes_the_table_does_not_measure(fx: Fixture) -> None:
     # Silently doing nothing is the failure mode: a knockdown of an unmeasured
     # gene yields a variant identical to its base, which reads as a null result.
-    _expect(KeyError, "absent from", knockdown, ["NOT_A_REAL_GENE"], 0.1, fx.dir("kd_bad"))
+    with pytest.raises(KeyError, match="absent from"):
+        knockdown(["NOT_A_REAL_GENE"], 0.1, fx.dir("kd_bad"))
 
 
 def test_knockdown_leaves_the_shared_dataset_manifest_untouched(fx: Fixture) -> None:
@@ -188,27 +182,21 @@ def test_two_generators_claiming_one_key_raises(fx: Fixture) -> None:
     a = knockdown(fx.genes[:1], 0.1, fx.dir("c5_a"))
     b = knockdown(fx.genes[1:2], 0.5, fx.dir("c5_b"))
 
-    _expect(
-        ValueError, "written by two generator results",
-        compose_variant_bundle, [a, b], fx.dir("c5_geno"),
-    )
+    with pytest.raises(ValueError, match="written by two generator results"):
+        compose_variant_bundle([a, b], fx.dir("c5_geno"))
 
 
 def test_unknown_canonical_key_raises(fx: Fixture) -> None:
     real = knockdown(fx.genes, 0.1, fx.dir("c6_files"))
     bogus = GeneratorResult(rows={"not_a_contract_key": real.rows[KEY]})
 
-    _expect(
-        ValueError, "not in the base bundle",
-        compose_variant_bundle, [bogus], fx.dir("c6_geno"),
-    )
+    with pytest.raises(ValueError, match="not in the base bundle"):
+        compose_variant_bundle([bogus], fx.dir("c6_geno"))
 
 
 def test_generator_result_rejects_missing_files(fx: Fixture) -> None:
-    _expect(
-        FileNotFoundError, "do not exist",
-        GeneratorResult, {KEY: fx.tmp / "never_written.tsv"},
-    )
+    with pytest.raises(FileNotFoundError, match="do not exist"):
+        GeneratorResult({KEY: fx.tmp / "never_written.tsv"})
 
 
 # ---------------------------------------------------------------------------
@@ -308,52 +296,3 @@ def test_variants_are_not_written_into_the_package(fx: Fixture) -> None:
 
     for written in (result.rows[KEY], manifest_path):
         assert package_root not in Path(written).resolve().parents, f"{written} is inside the package"
-
-
-CHECKS = [
-    test_read_bundle_resolves_every_path,
-    test_knockdown_scales_only_the_named_genes,
-    test_knockdown_records_its_provenance,
-    test_knockdown_rejects_genes_the_table_does_not_measure,
-    test_knockdown_leaves_the_shared_dataset_manifest_untouched,
-    test_composed_bundle_is_complete_and_valid,
-    test_every_path_in_a_composed_bundle_resolves,
-    test_overridden_key_points_at_the_variant,
-    test_overridden_key_keeps_its_schema_name,
-    test_two_generators_claiming_one_key_raises,
-    test_unknown_canonical_key_raises,
-    test_generator_result_rejects_missing_files,
-    test_identical_genotypes_share_an_id,
-    test_different_factors_give_different_ids,
-    test_a_variant_differs_from_its_base,
-    test_editing_a_referenced_file_changes_the_id,
-    test_id_is_independent_of_location,
-    test_sidecar_records_lineage,
-    test_provenance_would_be_lost_in_the_manifest,
-    test_variants_are_not_written_into_the_package,
-]
-
-
-def main() -> int:
-    failures = []
-    with tempfile.TemporaryDirectory() as td:
-        fx = Fixture(Path(td))
-        for check in CHECKS:
-            try:
-                check(fx)
-                print(f"OK {check.__name__}")
-            except Exception as e:  # noqa: BLE001 — report and continue
-                print(f"FAIL {check.__name__}", file=sys.stderr)
-                print(f"  {type(e).__name__}: {e}", file=sys.stderr)
-                failures.append(check.__name__)
-    if failures:
-        print(f"\n{len(failures)} genotype check(s) failed:", file=sys.stderr)
-        for f in failures:
-            print(f"  - {f}", file=sys.stderr)
-        return 1
-    print(f"\nAll {len(CHECKS)} genotype checks passed.")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
