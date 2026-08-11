@@ -40,6 +40,13 @@ _KINDS = ["measured", "theoretical_max", "model_predicted"]
 # is the join across all three (e.g. grade a SIM cultivation vs an EXP one).
 _MODES = ["EXP", "SIM", "literature"]
 
+# What ONE unit of ``n_reps`` is. A count is meaningless without it, and --
+# more importantly -- counts on DIFFERENT bases are not commensurable: 6000
+# simulated cells and 3 bioreactors are both "n", and a statistic that treats
+# them as the same kind of thing reports our ensemble size rather than the
+# biology. Extend this list as new cultivation platforms arrive.
+_REPLICATE_BASES = ["reactor", "flask", "well", "cell", "seed"]
+
 
 # ---------------------------------------------------------------------------
 # Cultivation registry: one row per cultivation (the who/how/when/why)
@@ -77,7 +84,12 @@ CultivationRegistrySchema = pa.DataFrameSchema(
         ),
         "experiment_id": pa.Column(
             dtype=str, nullable=True, required=False,
-            description="Performer experiment id, or a sim run/commit ref.",
+            description=(
+                "Performer experiment id, or a sim RUN id. Code identity is "
+                "``run_commit``, not this -- the two were previously conflated "
+                "here, which left no honest place to say 'the run recorded no "
+                "commit'."
+            ),
         ),
         "date": pa.Column(
             dtype=str, nullable=True, required=False,
@@ -104,8 +116,50 @@ CultivationRegistrySchema = pa.DataFrameSchema(
             description="Operation mode (e.g. batch, fed-batch). Inferred values flagged in notes.",
         ),
         "n_reps": pa.Column(
+            dtype="Int64", nullable=True, required=False,
+            description=(
+                "How many independent units this group aggregates over, counted "
+                "in ``replicate_basis``. Nullable-integer rather than string: the "
+                "previous 'count OR descriptor' contract produced three encodings "
+                "in one column (``'3'``, ``'ensemble'``, and a whole sentence), so "
+                "no consumer could read it. What the number COUNTS now lives in "
+                "``replicate_basis``; any decomposition (e.g. seeds x generations) "
+                "belongs in ``notes``."
+            ),
+        ),
+        "replicate_basis": pa.Column(
             dtype=str, nullable=True, required=False,
-            description="Replicate count (e.g. 3) or descriptor (e.g. ensemble). String to allow both.",
+            checks=pa.Check.isin(_REPLICATE_BASES),
+            description=(
+                "What one unit of ``n_reps`` IS -- reactor | flask | well | cell | "
+                "seed. Required for ``n_reps`` to mean anything, and load-bearing "
+                "for grading: a consumer must be able to see that 6000 cells and 3 "
+                "reactors are not the same unit BEFORE running a statistic that "
+                "assumes they are. Dispersion carries the same caveat: single-cell "
+                "variability within one condition is not reactor-to-reactor "
+                "reproducibility, though both arrive as a standard deviation."
+            ),
+        ),
+        "variant": pa.Column(
+            dtype=str, nullable=True, required=False,
+            description=(
+                "Which arm of a multi-condition run this group is. Where the "
+                "producer's own variant label is a bare index, record the RESOLVED "
+                "condition (e.g. '1e-5 mM mecillinam, dAcrB') rather than the index "
+                "alone: an index is resolvable only against a config that ships "
+                "separately, so a bare '4' is not provenance. Blank for "
+                "single-condition cultivations."
+            ),
+        ),
+        "run_commit": pa.Column(
+            dtype=str, nullable=True, required=False,
+            description=(
+                "Git identity of the code that produced a SIM cultivation. Leave "
+                "BLANK -- with the reason recorded in ``notes`` -- when the run "
+                "recorded none; never substitute the extracting tree's HEAD, which "
+                "would look right and mean something else. A blank commit that does "
+                "not say why is indistinguishable from one nobody filled in."
+            ),
         ),
         "notes": pa.Column(
             dtype=str, nullable=True, required=False,
