@@ -39,6 +39,13 @@ carried separately and **nothing is pre-collapsed**, so a consumer can reduce to
 whichever level it needs. Producers state in prose, in the provenance record,
 what one row is.
 
+⚠ **``time_basis`` exists because the two sides of a comparison do not relate to
+time the same way.** A measured row is typically a sample drawn at
+``timepoint_h``. A simulated per-cell row has no such instant: its value is a
+mean over that cell's cycle. Both are legitimate, and a null ``timepoint_h``
+alone cannot tell them apart — so the aggregation is *declared* rather than
+inferred from an absence.
+
 **A bare ``value`` here does not contradict the aggregated tier's refusal of
 one.** That refusal was about a ``value`` sitting *beside* ``mean_arithmetic`` /
 ``mean_geometric`` alternatives, where a consumer can silently pick the wrong
@@ -61,6 +68,14 @@ from .cultivation import _REPLICATE_BASES
 #: collapsing them is the failure this column exists to prevent.
 DETECTION_STATES = ("detected", "below_limit", "not_detected")
 
+#: How a row's value relates to time. ``instant`` is a sample taken at
+#: ``timepoint_h``; ``interval_mean`` is an average over an interval, which is
+#: what a per-cell simulated value is (a mean over that cell's cycle). Required,
+#: because leaving it to a null ``timepoint_h`` would make "aggregated over an
+#: interval" indistinguishable from "timepoint unknown" — the same conflation
+#: ``detection`` exists to prevent one column over.
+TIME_BASES = ("instant", "interval_mean")
+
 VECTOR_REPLICATE_COLUMNS = [
     "cultivation_group_id",
     "observable",
@@ -70,6 +85,7 @@ VECTOR_REPLICATE_COLUMNS = [
     "replicate_id",
     "replicate",
     "replicate_basis",
+    "time_basis",
     "timepoint_h",
     "sample_id",
     "detection",
@@ -134,10 +150,21 @@ VectorReplicateSchema = pa.DataFrameSchema(
                 "3 bioreactors or 6000 simulated cells, and a statistic that "
                 "treats those alike is wrong."),
         ),
+        "time_basis": pa.Column(
+            str, nullable=False,
+            checks=pa.Check.isin(TIME_BASES),
+            description=(
+                "Whether the value is a sample at ``timepoint_h`` "
+                "(``instant``) or a mean over an interval "
+                "(``interval_mean``). Required so that a null ``timepoint_h`` "
+                "cannot silently mean two different things."),
+        ),
         "timepoint_h": pa.Column(
             float, nullable=True,
             description=(
-                "Hours into the cultivation. Carried separately from "
+                "Hours into the cultivation, for an ``instant`` row. Null when "
+                "``time_basis`` is ``interval_mean`` — the interval is then "
+                "named by ``phase``/``window``. Carried separately from "
                 "``replicate`` so a consumer can collapse to either level."),
         ),
         "sample_id": pa.Column(
