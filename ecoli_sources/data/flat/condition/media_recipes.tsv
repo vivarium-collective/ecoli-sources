@@ -19,4 +19,5 @@
 "minimal_plus_nitrite"	"MIX0-57"	1.0	""	0	["NITRITE"]	[Infinity]	[]	[]
 "minimal_plus_quercetin"	"MIX0-57"	1.0	""	0	["CPD-520"]	[Infinity]	[]	[]
 "minimal_plus_sam"	"MIX0-57"	1.0	""	0	["S-ADENOSYLMETHIONINE"]	[Infinity]	[]	[]
+"minimal_plus_tryptophan"	"MIX0-57"	1.0	""	0	["TRP"]	[Infinity]	[]	[]
 "minimal_plus_tungstate"	"MIX0-57"	1.0	""	0	["TUNGSTATE"]	[Infinity]	[]	[]
