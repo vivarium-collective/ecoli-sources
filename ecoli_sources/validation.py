@@ -46,6 +46,7 @@ _SCALAR_SCHEMAS = {"ScalarClaimSchema", "ScalarObservationSchema"}
 # shape would be convenient to call and unpleasant to consume.
 _VECTOR_SCHEMAS = {
     "VectorObservationSchema",       # cultivation-keyed, tidy (this subsystem)
+    "VectorReplicateSchema",         # per-sample sibling of the above
     "ReactionFluxSchema",            # per-source vector claims
     "ProteinAbundanceSchema",
     "MetaboliteConcentrationSchema",

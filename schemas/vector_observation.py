@@ -35,6 +35,19 @@ aggregations of one experiment coexist as rows differing in ``phase``/``window``
 
 Because the values are aggregates, each row carries its own dispersion and
 counts, so a consumer can weight, filter, or draw a band without the raw tier.
+
+**Scope of that curation, stated precisely.** What the paragraph above defends is
+the *sample selection* — which measurements represent the condition. It is not a
+claim that those samples may never leave the producer individually. A sibling
+``VectorReplicateSchema`` table ships the same samples one row each, for
+consumers whose statistic needs a distribution rather than its summary (a kernel
+two-sample test compares distributions; a mean and an ``n`` cannot be sampled).
+
+That sibling holds *exactly* the samples this tier averages, so re-aggregating it
+reproduces these counts exactly — a consumer cannot widen the interval or
+re-admit an excluded replicate from it. **The curation stays here; only the
+choice of statistic moves.** This tier remains the default operand, and an axis
+that grades against an aggregate should keep grading against this one.
 """
 
 from __future__ import annotations

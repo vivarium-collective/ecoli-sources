@@ -41,6 +41,7 @@ from .cultivation import (
     ScalarObservationSchema,
 )
 from .vector_observation import VectorObservationSchema
+from .vector_replicate import VectorReplicateSchema
 from .adjustments import (
     AdjustmentValueSchema,
     AminoAcidPathwayAdjustmentSchema,
@@ -84,6 +85,7 @@ __all__ = [
     "CultivationRegistrySchema",
     "ScalarObservationSchema",
     "VectorObservationSchema",
+    "VectorReplicateSchema",
     # rnaseq
     "RnaseqTpmTableSchema",
     "RnaseqSamplesManifestSchema",
