@@ -157,25 +157,32 @@ def test_validate_false_still_skips(tmp_path):
     assert len(out) == 2
 
 
-def test_every_registered_schema_this_repo_defines_is_dispatched():
-    """Catches the NEXT instance of F1 without anyone knowing where it is.
+def test_every_registered_schema_is_dispatched_or_explicitly_exempt():
+    """★ Catches the next undispatched schema — and, unlike its first version, can.
 
-    ``_VECTOR_SCHEMAS`` legitimately contains names validated elsewhere, so a
-    ``None`` from ``_schema_for`` is not automatically wrong. What is wrong is a
-    schema module that EXISTS in this repo and is registered, yet is never
-    dispatched — registration without validation.
+    ⚠ The first version derived a module name from the schema name
+    (CamelCase → snake_case) and skipped anything that failed to import. A cold
+    review found that **four of the six** registered schemas live in
+    ``validation_claim.py``, so the import always failed, the test always
+    skipped them, and it reported clean while the very condition it asserts was
+    violated four times. It could only ever fail for a schema whose module
+    happens to be named after it — i.e. the two already dispatched.
+
+    Now it asserts a partition instead: every registered name is either
+    dispatched or named in ``_UNDISPATCHED_VECTOR_SCHEMAS``. Adding a schema and
+    forgetting to dispatch it fails here; the known gap is visible rather than
+    accidental.
     """
-    import importlib
+    from ecoli_sources.validation import _UNDISPATCHED_VECTOR_SCHEMAS
 
     for name in _VECTOR_SCHEMAS:
-        module = "schemas." + "".join(
-            "_" + c.lower() if c.isupper() else c
-            for c in name.removesuffix("Schema")).lstrip("_")
-        try:
-            importlib.import_module(module)
-        except ModuleNotFoundError:
-            continue  # validated elsewhere; not this repo's contract
-        assert _schema_for(name) is not None, (
-            f"{name} is registered in _VECTOR_SCHEMAS and its schema module "
-            f"exists here, but _schema_for does not dispatch it — slots resolve "
-            f"and validate=True checks nothing")
+        dispatched = _schema_for(name) is not None
+        exempt = name in _UNDISPATCHED_VECTOR_SCHEMAS
+        assert dispatched != exempt, (
+            f"{name}: dispatched={dispatched}, exempt={exempt}. Every registered "
+            f"schema must be exactly one of the two — a name that is neither "
+            f"means validate=True silently checks nothing for that slot; a name "
+            f"that is both means the exemption list is stale.")
+
+    assert not (_UNDISPATCHED_VECTOR_SCHEMAS - set(_VECTOR_SCHEMAS)), (
+        "the exemption list names a schema that is no longer registered")

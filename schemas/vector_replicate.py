@@ -79,23 +79,10 @@ DETECTION_STATES = tuple(_DETECTION)
 #: ``detection`` exists to prevent one column over.
 TIME_BASES = ("instant", "interval_mean")
 
-VECTOR_REPLICATE_COLUMNS = [
-    "cultivation_group_id",
-    "observable",
-    "entity_id",
-    "units",
-    "kind",
-    "replicate_id",
-    "replicate",
-    "replicate_basis",
-    "time_basis",
-    "timepoint_h",
-    "sample_id",
-    "detection",
-    "value",
-    "phase",
-    "window",
-]
+#: ⚠ DERIVED from the schema, never hand-listed. An independently maintained
+#: copy is free to drift from the columns actually enforced — the same argument
+#: that made this module import its vocabularies rather than restate them.
+#: (Consumers that need the order should read this rather than transcribe it.)
 
 
 def _value_present_iff_detected(df: pd.DataFrame) -> bool:
@@ -218,13 +205,22 @@ VectorReplicateSchema = pa.DataFrameSchema(
             float, nullable=True,
             checks=pa.Check.greater_than_or_equal_to(0),
             description=(
-                "The measurement, in ``units``. Null iff ``detection`` is "
-                "``not_detected``. Non-negative: this tier carries abundances, "
-                "not signed quantities."),
+                "The measurement, in ``units``. Present exactly when "
+                "``detection`` is ``detected`` — ``below_limit`` and "
+                "``not_detected`` BOTH carry a null, and what distinguishes "
+                "them is the claim in ``detection``. A ``below_limit`` row is a "
+                "statement about the limit, not a measurement of zero, so "
+                "shipping the reported zero would hand a re-aggregating "
+                "consumer a non-measurement to average. Non-negative: this tier "
+                "carries abundances, not signed quantities. ⚠ The sub-threshold "
+                "value and the limit itself are unrepresentable in either tier; "
+                "note ``strict='filter'`` below before adding a column for "
+                "them."),
         ),
-        # Optional and nullable, matching the aggregated tier. Required here
-        # only, a producer could ship an aggregate with no phase/window but not
-        # its replicate sibling — an asymmetry with no reason behind it.
+        # Optional and nullable, matching the aggregated tier. WERE they
+        # required here only, a producer could ship an aggregate with no
+        # phase/window but not its replicate sibling — an asymmetry with no
+        # reason behind it.
         "phase": pa.Column(str, nullable=True, required=False),
         "window": pa.Column(str, nullable=True, required=False),
     },
@@ -240,3 +236,11 @@ VectorReplicateSchema = pa.DataFrameSchema(
     coerce=True,
     name="VectorReplicateSchema",
 )
+
+
+#: ⚠ DERIVED from the schema, never hand-listed. An independently maintained
+#: copy is free to drift from the columns actually enforced — the same argument
+#: that made this module import its vocabularies rather than restate them.
+def vector_replicate_columns() -> list[str]:
+    """The column order this schema defines, derived from the schema itself."""
+    return list(VectorReplicateSchema.columns)
