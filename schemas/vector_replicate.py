@@ -62,11 +62,14 @@ import pandas as pd
 import pandera.pandas as pa
 
 from .cultivation import _REPLICATE_BASES
+from .vector_observation import _DETECTION, _KINDS
 
-#: Detection vocabulary, shared with ``VectorObservationSchema``. A measured
-#: zero and an entity that was never looked for are different claims, and
-#: collapsing them is the failure this column exists to prevent.
-DETECTION_STATES = ("detected", "below_limit", "not_detected")
+#: Detection vocabulary. ⚠ IMPORTED from ``vector_observation`` rather than
+#: restated: a per-sample row and its aggregate must agree on what a token
+#: MEANS, and two independent lists are free to drift into disagreeing while
+#: both validate. (An earlier revision of this module declared its own copy
+#: under a comment claiming it was shared. It was not.)
+DETECTION_STATES = tuple(_DETECTION)
 
 #: How a row's value relates to time. ``instant`` is a sample taken at
 #: ``timepoint_h``; ``interval_mean`` is an average over an interval, which is
@@ -95,16 +98,45 @@ VECTOR_REPLICATE_COLUMNS = [
 ]
 
 
-def _value_present_iff_measured(df: pd.DataFrame) -> bool:
-    """``value`` is non-null exactly when the sample yielded a number.
+def _value_present_iff_detected(df: pd.DataFrame) -> bool:
+    """``value`` is present exactly when the sample DETECTED the entity.
 
-    ``not_detected`` means the entity was looked for in this sample and no
-    number came back, so a value there would be an invention. Every other state
-    must carry one — a null would silently drop the sample from any
-    re-aggregation and change ``n``.
+    ⚠ Mirrors ``VectorObservationSchema``'s rule for ``mean_arithmetic``
+    deliberately, and an earlier revision of this module did not: it required a
+    number on ``below_limit`` rows while the aggregate refused one, so the two
+    tiers asserted OPPOSITE contracts for the same token.
+
+    That divergence was not cosmetic. A ``below_limit`` row is a statement about
+    the limit, not a measurement of zero — and a producer emitting ``0.0`` there
+    hands a re-aggregating consumer a number that drags the mean toward zero and
+    inflates ``n``. Measured on a worked case: values (10, 0, 20) with the zero
+    reported below limit give the aggregate ``n=2, mean=15.0``, while naively
+    averaging a shipped ``0.0`` gives ``n=3, mean=10.0``. Silently.
+
+    ⇒ ``below_limit`` and ``not_detected`` both carry a null. What distinguishes
+    them is the CLAIM (looked for and under the limit, versus looked for and
+    absent), which is what ``detection`` is for.
     """
-    measured = df["detection"] != "not_detected"
-    return bool((df["value"].notna() == measured).all())
+    return bool(((df["detection"] == "detected") == df["value"].notna()).all())
+
+
+def _instant_rows_carry_a_timepoint(df: pd.DataFrame) -> bool:
+    """An ``instant`` row must say WHEN; an ``interval_mean`` row need not.
+
+    Without this the column does not deliver its own stated purpose: ``instant``
+    with a null ``timepoint_h`` is exactly the "is this unknown, or aggregated?"
+    ambiguity ``time_basis`` exists to remove, and it validated.
+
+    ``interval_mean`` is left free: an interval may legitimately carry a
+    midpoint, and the interval itself is named by ``phase``/``window``.
+
+    ⚠ Known limit, accepted 2026-08-21: this assumes every ``instant``-basis
+    modality can state a timepoint. A cultivation modality where a sample is
+    genuinely instantaneous but untimed would fail here and should relax this
+    rule rather than mislabel itself ``interval_mean``.
+    """
+    instant = df["time_basis"] == "instant"
+    return bool(df.loc[instant, "timepoint_h"].notna().all())
 
 
 def _replicate_key_unique(df: pd.DataFrame) -> bool:
@@ -123,7 +155,13 @@ VectorReplicateSchema = pa.DataFrameSchema(
         "observable": pa.Column(str, nullable=False),
         "entity_id": pa.Column(str, nullable=False),
         "units": pa.Column(str, nullable=False),
-        "kind": pa.Column(str, nullable=False),
+        "kind": pa.Column(
+            str, nullable=False, checks=pa.Check.isin(_KINDS),
+            description=(
+                "Same vocabulary as the aggregated tier. Unconstrained, a "
+                "plausible-looking ``simulated`` would validate here and then "
+                "fall out of every ``kind == 'measured'`` filter downstream."),
+        ),
         "replicate_id": pa.Column(
             str, nullable=False,
             description=(
@@ -184,16 +222,21 @@ VectorReplicateSchema = pa.DataFrameSchema(
                 "``not_detected``. Non-negative: this tier carries abundances, "
                 "not signed quantities."),
         ),
-        "phase": pa.Column(str, nullable=False),
-        "window": pa.Column(str, nullable=False),
+        # Optional and nullable, matching the aggregated tier. Required here
+        # only, a producer could ship an aggregate with no phase/window but not
+        # its replicate sibling — an asymmetry with no reason behind it.
+        "phase": pa.Column(str, nullable=True, required=False),
+        "window": pa.Column(str, nullable=True, required=False),
     },
     checks=[
-        pa.Check(_value_present_iff_measured,
-                 error="value must be non-null iff detection != 'not_detected'"),
+        pa.Check(_value_present_iff_detected,
+                 error="value must be non-null iff detection == 'detected'"),
+        pa.Check(_instant_rows_carry_a_timepoint,
+                 error="time_basis 'instant' requires a timepoint_h"),
         pa.Check(_replicate_key_unique,
                  error="duplicate (cultivation_group_id, observable, entity_id, units, replicate_id)"),
     ],
-    strict=False,
+    strict="filter",  # allow extra columns; validate the required ones
     coerce=True,
     name="VectorReplicateSchema",
 )
