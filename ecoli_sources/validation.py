@@ -46,6 +46,7 @@ _SCALAR_SCHEMAS = {"ScalarClaimSchema", "ScalarObservationSchema"}
 # shape would be convenient to call and unpleasant to consume.
 _VECTOR_SCHEMAS = {
     "VectorObservationSchema",       # cultivation-keyed, tidy (this subsystem)
+    "VectorReplicateSchema",         # per-sample sibling of the above
     "ReactionFluxSchema",            # per-source vector claims
     "ProteinAbundanceSchema",
     "MetaboliteConcentrationSchema",
@@ -285,18 +286,67 @@ def read_vector_observations(slot: dict, *, validate: bool = True) -> pd.DataFra
     Applies whichever of ``cultivation_group_id`` / ``observable`` / ``units``
     the slot pins AND the table carries, so the same call works for a tidy
     cultivation-keyed table and for a per-source claim table that pins none of
-    them. Validates against ``VectorObservationSchema`` when that is the slot's
-    schema (``validate=False`` to skip — e.g. at render time, where a payload
-    defect should be surfaced by CI rather than break a report)."""
+    them. Validates against whichever schema the slot names, via
+    :func:`_schema_for` (``validate=False`` to skip — e.g. at render time, where
+    a payload defect should be surfaced by CI rather than break a report).
+
+    ⚠ ``validate`` does not only decide whether a check runs; the vector schemas
+    use ``strict="filter"``, so validating also DROPS columns the schema does not
+    declare. A caller passing ``validate=False`` can therefore see columns the
+    CI path does not."""
     table = _read_tsv(Path(slot["path"]))
     for col in ("cultivation_group_id", "observable", "units"):
         want = slot.get(col)
         if want is not None and col in table.columns:
             table = table[table[col].astype(str) == str(want)]
-    if validate and slot.get("schema_name") == "VectorObservationSchema":
-        from schemas.vector_observation import VectorObservationSchema
-        table = VectorObservationSchema.validate(table, lazy=True)
+    # ⚠ Dispatch on the slot's schema, and keep ``_schema_for`` exhaustive over
+    # the schemas this repo defines. Registering a name in ``_VECTOR_SCHEMAS``
+    # makes a slot RESOLVABLE; it does not make it VALIDATED. A name added to
+    # one and not the other yields a caller that passed ``validate=True`` and
+    # silently got nothing checked — see test_vector_replicates.py.
+    if validate:
+        schema = _schema_for(str(slot.get("schema_name") or ""))
+        if schema is not None:
+            table = schema.validate(table, lazy=True)
     return table.reset_index(drop=True)
+
+
+def _schema_for(schema_name: str):
+    """The pandera schema for a vector slot, or ``None`` if this repo defines none.
+
+    ``None`` is a real answer: several ``_VECTOR_SCHEMAS`` entries are per-source
+    claim tables validated elsewhere. What must never happen is a schema that
+    EXISTS here going unused because this mapping was not extended alongside
+    ``_VECTOR_SCHEMAS``.
+    """
+    if schema_name == "VectorObservationSchema":
+        from schemas.vector_observation import VectorObservationSchema
+        return VectorObservationSchema
+    if schema_name == "VectorReplicateSchema":
+        from schemas.vector_replicate import VectorReplicateSchema
+        return VectorReplicateSchema
+    return None
+
+
+#: ⛔ Registered in ``_VECTOR_SCHEMAS`` and NOT dispatched by ``_schema_for``, so
+#: a caller passing ``validate=True`` on one of these slots gets no check.
+#:
+#: This is a KNOWN, PRE-EXISTING gap, enumerated rather than left to an accident.
+#: All four are defined in ``schemas/validation_claim.py``; a cold review
+#: (2026-08-21) demonstrated the hole by execution — a ``ReactionFluxSchema``
+#: slot carrying an invalid ``kind`` was returned clean — and found no other
+#: place in this repo that validates them.
+#:
+#: They are NOT dispatched here because switching four previously-unchecked
+#: schemas on is a behaviour change that can red existing payloads, and belongs
+#: in its own change with its own verification. **Do not extend this list to
+#: silence a test.** A new schema goes in ``_schema_for``.
+_UNDISPATCHED_VECTOR_SCHEMAS = frozenset({
+    "ReactionFluxSchema",
+    "ProteinAbundanceSchema",
+    "MetaboliteConcentrationSchema",
+    "MacromoleculeCompositionSchema",
+})
 
 
 def observations_for_cultivation_group(
