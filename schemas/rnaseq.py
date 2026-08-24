@@ -5,6 +5,11 @@ Canonical format: one file per condition, two required columns (gene_id, tpm_mea
 plus optional tpm_std. Sample metadata is stored in a separate manifest so that
 condition semantics (strain, media, is_basal, etc.) are not encoded in column
 headers.
+
+Differential-expression results live alongside them as their own tier
+(``DeseqResultTableSchema``): one file per contrast, one row per tested
+transcript, unfiltered. ``select_significant_genes`` is the canonical reading of
+such a table -- use it rather than re-deriving the steps, which do not commute.
 """
 
 import pandera.pandas as pa
@@ -181,7 +186,13 @@ DeseqResultTableSchema = pa.DataFrameSchema(
                 "Gene identifier the transcript maps to (e.g. an EcoCyc id like EG10001), "
                 "matching the reference gene set used by the TPM tables. NULLABLE and "
                 "NOT unique: a heterologous transcript has no reference gene, and several "
-                "transcripts can share one gene."
+                "transcripts can share one gene. "
+                "⚠ THIS IS THE REFERENCE GENE ID, and a differential-expression tool's "
+                "output often carries SEVERAL id columns -- one of which may itself be "
+                "called `gene_id` while holding a symbol or locus tag rather than the "
+                "reference id. Map the column that matches the TPM tables' `gene_id`, "
+                "whatever the producer named it. Putting a different id space here "
+                "VALIDATES CLEANLY and silently changes which genes collapse together."
             ),
         ),
         "log2_fold_change": pa.Column(
@@ -252,6 +263,14 @@ def select_significant_genes(
     3. **then** collapse transcripts to one row per ``gene_id``, keeping the
        transcript with the largest ``|log2_fold_change|``.
 
+    ⚠ **Ties in ``|log2_fold_change|`` are UNDEFINED**, not merely unspecified:
+    the winner depends on input row order, and two transcripts tying at
+    ``+x`` and ``-x`` select opposite signs. This matches the established
+    behaviour of the pipelines this function exists to reproduce, so it is
+    deliberate rather than overlooked -- but a caller who needs determinism on a
+    tie must impose it, and changing it here alone would make this function
+    disagree with those pipelines.
+
     Collapsing before filtering would pick a gene's most-extreme transcript and
     then test *that* for significance, which is a different question and yields a
     different gene set. Step 1 is likewise not a tidy-up: dropping rows without a
@@ -265,6 +284,12 @@ def select_significant_genes(
         results: a DataFrame conforming to ``DeseqResultTableSchema``.
         padj_thresh: keep rows with ``padj`` strictly below this.
         lfc_thresh: keep rows with ``|log2_fold_change|`` strictly above this.
+
+    ⚠ This is the **pre-overlay** gene set. A consumer applying these genes onto a
+    reference expression table will usually end up with FEWER, because genes absent
+    from that reference are dropped at that later step. A count recorded downstream
+    ("applied N of M") is therefore expected to be smaller than what this returns,
+    and the difference is not a defect in either.
 
     Returns:
         DataFrame indexed by ``gene_id``, one row per significant gene, carrying

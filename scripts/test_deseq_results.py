@@ -152,3 +152,48 @@ def test_selection_does_not_mutate_its_input():
     before = frame.copy(deep=True)
     select_significant_genes(frame)
     pd.testing.assert_frame_equal(frame, before)
+
+
+# --- the id-space trap --------------------------------------------------------
+
+def test_a_wrong_gene_id_column_validates_but_changes_the_answer():
+    """⚠ The failure this schema cannot catch, pinned so it is at least visible.
+
+    A DE producer's table commonly carries more than one gene-identifier column.
+    If the wrong one is mapped to ``gene_id``, every check here still passes --
+    the dtype is right, nulls are allowed, non-uniqueness is expected -- and the
+    only symptom is that a different set of transcripts collapses together, so
+    the gene count changes with no error anywhere.
+
+    Here two transcripts share one reference gene but carry distinct per-
+    transcript labels. Mapping the reference id collapses them to ONE gene;
+    mapping the per-transcript label leaves TWO. Both validate.
+    """
+    reference_id_mapped = _results([
+        ("tx-0001", "GENE00001", 2.0, 0.001),
+        ("tx-0002", "GENE00001", 3.0, 0.001),
+    ])
+    per_transcript_label_mapped = _results([
+        ("tx-0001", "labelA|locus-0001", 2.0, 0.001),
+        ("tx-0002", "labelB|locus-0002", 3.0, 0.001),
+    ])
+
+    DeseqResultTableSchema.validate(reference_id_mapped)
+    DeseqResultTableSchema.validate(per_transcript_label_mapped)  # equally clean
+
+    assert len(select_significant_genes(reference_id_mapped)) == 1
+    assert len(select_significant_genes(per_transcript_label_mapped)) == 2
+
+
+def test_strict_filter_discards_the_columns_that_would_reveal_the_mistake():
+    """Why the trap above is silent rather than recoverable.
+
+    ``strict="filter"`` drops unmapped columns, so a second, correct id column
+    present in the source does not survive validation. Nothing downstream can
+    notice the mapping was wrong, because the evidence is gone.
+    """
+    frame = _results([("tx-0001", "labelA|locus-0001", 2.0, 0.001)])
+    frame["some_other_id_column"] = ["GENE00001"]
+
+    validated = DeseqResultTableSchema.validate(frame)
+    assert "some_other_id_column" not in validated.columns

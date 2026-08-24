@@ -36,7 +36,8 @@ ecoli_sources/                     Top-level Python package; locator for data fi
       perturbations/               Generated variants (gitignored; regenerated locally)
 
 schemas/                           Pandera validation schemas
-  rnaseq.py                        RnaseqTpmTableSchema, RnaseqSamplesManifestSchema
+  rnaseq.py                        RnaseqTpmTableSchema, RnaseqSamplesManifestSchema,
+                                   DeseqResultTableSchema
   adjustments.py                   Adjustment / pathway / metabolite schemas
   parameters.py                    Growth-rate-dependent parameters, dry mass
   half_lives.py                    RNA & protein half-life schemas

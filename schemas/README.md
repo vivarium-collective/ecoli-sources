@@ -92,6 +92,46 @@ reactions, transcription units, curated `_added/_modified/_removed` edits,
 and the `condition/`, `mass_fractions/`, `rna_seq_data/` subdirectories)
 are planned for a second phase.
 
+## Differential-expression result tables
+
+**Canonical format:** One file per **contrast**, one row per **tested transcript**, unfiltered by significance.
+
+| Column             | Type   | Required | Description |
+|--------------------|--------|----------|-------------|
+| `transcript_id`    | string | yes      | The table's grain. Unique. |
+| `gene_id`          | string | yes      | Reference gene id the transcript maps to. **Nullable and NOT unique** — a heterologous transcript maps to no reference gene, and several transcripts can share one gene. |
+| `log2_fold_change` | float  | yes      | Nullable: a transcript can be tested and yield no estimate. |
+| `padj`             | float  | yes      | Adjusted p-value, 0–1. Nullable: independent filtering leaves it undefined for some transcripts, which is **not** the same as "not significant". |
+| `base_mean`        | float  | no       | Mean normalized count. |
+| `lfc_se`           | float  | no       | Standard error of the log2 fold change. |
+
+The stored table is deliberately **lossless** — no significance filter is applied, because padj/lfc cutoffs are an analysis choice belonging to the consumer.
+
+The contrast's identity — groups compared, sample composition, caller settings — is **not** in the table. It belongs to the dataset's provenance record, so that one file means exactly one comparison.
+
+### ⚠ Mapping a producer's output onto this schema is not a pure rename
+
+A differential-expression tool's output commonly carries **several gene-identifier columns**, and one of them may itself be named `gene_id` while holding a symbol or locus tag rather than the reference id. Mapping the wrong one **validates cleanly** and silently changes which transcripts collapse together — so the gene count changes with no error at any point. `strict="filter"` then drops the unmapped columns, removing the evidence.
+
+Map whichever column matches the TPM tables' `gene_id`, whatever the producer called it, and verify against the reference gene set.
+
+### Reading one
+
+```python
+from schemas import DeseqResultTableSchema, select_significant_genes
+
+validated = DeseqResultTableSchema.validate(df)
+genes = select_significant_genes(validated, padj_thresh=0.1, lfc_thresh=1.0)
+```
+
+`select_significant_genes` is the canonical reading: drop rows with no `padj`/`log2_fold_change`/`gene_id`, **then** threshold, **then** collapse transcripts to one row per gene keeping the largest `|log2_fold_change|`.
+
+⚠ **Those steps do not commute.** Collapsing before filtering picks a gene's most-extreme transcript and then tests *that* for significance — a different question, a different gene set, and no error either way. Use the function rather than re-deriving it.
+
+⚠ Ties in `|log2_fold_change|` are **undefined** — the winner depends on row order, and a `+x`/`-x` tie selects opposite signs. This matches the pipelines the function reproduces; impose determinism yourself if you need it.
+
+⚠ The result is the **pre-overlay** gene set. Applying it onto a reference expression table usually yields fewer genes, because genes absent from that reference drop at that later step; a downstream "applied N of M" is expected to be smaller.
+
 ## Dependencies
 
 - `pandas`
