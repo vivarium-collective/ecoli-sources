@@ -18,7 +18,9 @@ Organization:
   VECTOR (a per-gene proteome, a per-gene transcriptome): the vector analogue
   of ``ScalarObservationSchema``. Measurement-only; resolved by
   ``ecoli_sources.validation.load_vector_observations``.
-* ``rnaseq`` — per-condition TPM tables + samples manifest (Chris).
+* ``rnaseq`` — per-condition TPM tables + samples manifest (Chris), plus
+  differential-expression result tables (``DeseqResultTableSchema``) and
+  ``select_significant_genes``, the canonical reading of one.
 * ``adjustments`` — parca-time manual overrides (flat/adjustments/*).
 * ``parameters`` — growth-rate-dependent physiological parameters.
 * ``half_lives`` — RNA and protein half-lives.
@@ -65,8 +67,10 @@ from .regulation import (
     TranscriptionFactorsSchema,
 )
 from .rnaseq import (
+    DeseqResultTableSchema,
     RnaseqSamplesManifestSchema,
     RnaseqTpmTableSchema,
+    select_significant_genes,
 )
 from .translation import TranslationEfficiencySchema
 
@@ -89,6 +93,8 @@ __all__ = [
     # rnaseq
     "RnaseqTpmTableSchema",
     "RnaseqSamplesManifestSchema",
+    "DeseqResultTableSchema",
+    "select_significant_genes",
     # adjustments
     "AdjustmentValueSchema",
     "AminoAcidPathwayAdjustmentSchema",
