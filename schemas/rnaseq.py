@@ -148,3 +148,138 @@ RnaseqSamplesManifestSchema = pa.DataFrameSchema(
         "for synthetic / perturbed datasets; null for primary sources."
     ),
 )
+
+
+# ---------------------------------------------------------------------------
+# Differential-expression result table (one file per contrast)
+# ---------------------------------------------------------------------------
+#
+# Promoted alongside the TPM tables an overlay derives FROM them, so a consumer
+# can ask which genes moved and by how much, rather than only seeing the
+# post-overlay expression. The table is deliberately LOSSLESS: every tested
+# transcript is kept, with no significance filter applied, because the
+# thresholds are an analysis choice belonging to the consumer. Use
+# ``select_significant_genes`` to apply them — see the warning there about
+# operation order.
+
+DeseqResultTableSchema = pa.DataFrameSchema(
+    name="deseq_result_table",
+    columns={
+        "transcript_id": pa.Column(
+            dtype=str,
+            unique=True,
+            nullable=False,
+            description=(
+                "Transcript identifier as tested, one row per transcript. This is the "
+                "table's grain: several transcripts may map to one gene."
+            ),
+        ),
+        "gene_id": pa.Column(
+            dtype=str,
+            nullable=True,
+            description=(
+                "Gene identifier the transcript maps to (e.g. an EcoCyc id like EG10001), "
+                "matching the reference gene set used by the TPM tables. NULLABLE and "
+                "NOT unique: a heterologous transcript has no reference gene, and several "
+                "transcripts can share one gene."
+            ),
+        ),
+        "log2_fold_change": pa.Column(
+            float,
+            nullable=True,
+            description=(
+                "log2 fold change of the contrast, in the direction recorded in the "
+                "dataset's provenance. Nullable: a transcript can be tested and yield no "
+                "estimate."
+            ),
+        ),
+        "padj": pa.Column(
+            float,
+            nullable=True,
+            checks=[
+                pa.Check.in_range(0.0, 1.0),
+            ],
+            description=(
+                "Multiple-testing-adjusted p-value. Nullable: independent filtering "
+                "leaves padj undefined for some transcripts, and that is meaningfully "
+                "different from a non-significant value."
+            ),
+        ),
+        "base_mean": pa.Column(
+            float,
+            nullable=True,
+            required=False,
+            checks=[pa.Check.greater_than_or_equal_to(0)],
+            description="Optional: mean normalized count across samples in the contrast.",
+        ),
+        "lfc_se": pa.Column(
+            float,
+            nullable=True,
+            required=False,
+            checks=[pa.Check.greater_than_or_equal_to(0)],
+            description="Optional: standard error of the log2 fold change.",
+        ),
+    },
+    strict="filter",  # allow extra annotation columns; validate the contract
+    coerce=True,
+    description=(
+        "Differential-expression results for ONE contrast, one row per tested "
+        "transcript, unfiltered by significance. Required: transcript_id, gene_id, "
+        "log2_fold_change, padj. The contrast's groups, sample composition and "
+        "caller settings are NOT columns here — they belong to the dataset's "
+        "provenance record, so that one file means one comparison."
+    ),
+)
+
+
+def select_significant_genes(
+    results,
+    *,
+    padj_thresh: float = 0.1,
+    lfc_thresh: float = 1.0,
+):
+    """Canonical reading of a ``DeseqResultTableSchema`` table: the significant genes.
+
+    Returns a gene-keyed frame, indexed by ``gene_id``, holding one row per gene.
+
+    ⚠ **The order of operations is part of the contract, and reversing it silently
+    changes the answer.** The steps are:
+
+    1. drop rows with no ``padj``, no ``log2_fold_change``, or no ``gene_id`` —
+       a transcript that was not testable, or that maps to no reference gene,
+       is not a result about a gene;
+    2. **then** apply the significance thresholds;
+    3. **then** collapse transcripts to one row per ``gene_id``, keeping the
+       transcript with the largest ``|log2_fold_change|``.
+
+    Collapsing before filtering would pick a gene's most-extreme transcript and
+    then test *that* for significance, which is a different question and yields a
+    different gene set. Step 1 is likewise not a tidy-up: dropping rows without a
+    gene id changes the count.
+
+    This function exists so that consumers do not each re-derive those steps.
+    Callers wanting a different definition should say so explicitly rather than
+    reimplementing this one slightly differently.
+
+    Args:
+        results: a DataFrame conforming to ``DeseqResultTableSchema``.
+        padj_thresh: keep rows with ``padj`` strictly below this.
+        lfc_thresh: keep rows with ``|log2_fold_change|`` strictly above this.
+
+    Returns:
+        DataFrame indexed by ``gene_id``, one row per significant gene, carrying
+        the columns of the selected transcript.
+    """
+    frame = results.dropna(subset=["padj", "log2_fold_change", "gene_id"])
+    significant = frame[
+        (frame["padj"] < padj_thresh)
+        & (frame["log2_fold_change"].abs() > lfc_thresh)
+    ].copy()
+    significant["_abs_lfc"] = significant["log2_fold_change"].abs()
+    collapsed = (
+        significant.sort_values("_abs_lfc", ascending=False)
+        .drop_duplicates("gene_id")
+        .drop(columns="_abs_lfc")
+        .set_index("gene_id")
+    )
+    return collapsed
