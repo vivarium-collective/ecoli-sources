@@ -1,0 +1,4 @@
+# Tryptophan supplement (finite TRP), used by the minimal_plus_tryptophan recipe.
+# Concentration matches vEcoli-private reconstruction/ecoli/flat/condition/media/TRP_supplement.tsv.
+"molecule id"	"concentration (units.mmol / units.L)"
+"TRP"	240
