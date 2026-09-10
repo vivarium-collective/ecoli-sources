@@ -45,7 +45,7 @@ from processing.genotypes import (  # noqa: E402
     read_bundle,
 )
 
-N_CONTRACT_KEYS = 135
+N_CONTRACT_KEYS = 136  # +1 in #19: condition__media__TRP_supplement (#18 added the file, not the row)
 
 # The gene the tranche-A knockout study uses, and the one v2ecoli's own
 # deletion suite targets. It sits inside the lac operon, so transcription units
@@ -633,7 +633,7 @@ def test_every_path_in_a_composed_bundle_resolves(lacy_ko, tmp_path):
     """
     The silent failure: manifest paths resolve relative to the manifest's own
     directory, so an unrelativized one validates cleanly and points at nothing.
-    A knockout overrides six of 135 keys, so 129 must still reach base data.
+    A knockout overrides six of 136 keys, so 130 must still reach base data.
     """
     manifest_path = compose_variant_bundle([lacy_ko], tmp_path / "geno")
     root = manifest_path.parent
@@ -652,7 +652,7 @@ def test_every_path_in_a_composed_bundle_resolves(lacy_ko, tmp_path):
         1 for _, r in df.iterrows()
         if (root / r["source_path"]).resolve() not in overridden
     )
-    assert still_base == N_CONTRACT_KEYS - 6 == 129
+    assert still_base == N_CONTRACT_KEYS - 6 == 130
 
 
 def test_editing_any_of_the_six_changes_the_id(lacy_ko, tmp_path):
