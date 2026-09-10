@@ -33,6 +33,7 @@ condition__media__MIX0-55	flat/condition/media/MIX0-55.tsv	ParCa flat input: con
 condition__media__MIX0-57	flat/condition/media/MIX0-57.tsv	ParCa flat input: condition/media/MIX0-57.tsv	
 condition__media__MIX0-58	flat/condition/media/MIX0-58.tsv	ParCa flat input: condition/media/MIX0-58.tsv	
 condition__media__MIX0-844	flat/condition/media/MIX0-844.tsv	ParCa flat input: condition/media/MIX0-844.tsv	
+condition__media__TRP_supplement	flat/condition/media/TRP_supplement.tsv	ParCa flat input: condition/media/TRP_supplement.tsv	
 condition__media_recipes	flat/condition/media_recipes.tsv	ParCa flat input: condition/media_recipes.tsv	
 condition__tf_condition	flat/condition/tf_condition.tsv	ParCa flat input: condition/tf_condition.tsv	
 condition__timelines_def	flat/condition/timelines_def.tsv	ParCa flat input: condition/timelines_def.tsv	
