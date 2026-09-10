@@ -37,7 +37,7 @@ from processing.genotypes import (  # noqa: E402
 from schemas import ReferenceBundleSchema  # noqa: E402
 
 KEY = "rnaseq_experimental_tpms"
-N_CONTRACT_KEYS = 135
+N_CONTRACT_KEYS = 136  # +1 in #19: condition__media__TRP_supplement (#18 added the file, not the row)
 
 
 class Fixture:
